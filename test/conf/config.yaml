@@ -1,0 +1,28 @@
+---
+version: 1.0.0
+
+include:
+  -
+extend:
+  -
+
+project:
+  name: "KUPL"
+  desc: "KUPL test"
+  type:
+  prod:
+  team:
+  ver:  "2.2"
+  sut:
+  layer:
+  brand:
+
+components:
+  - type: "hdt_cmc_c_cpp"
+    repo: null
+    dest: null
+    manifest:
+      gtest: null
+      gcov: null
+      asan: null
+      secodefuzz: null

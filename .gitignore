@@ -1,0 +1,8 @@
+.vscode/
+.git/
+.idea/
+.codemate/
+lcov
+/env.sh
+example/
+build
