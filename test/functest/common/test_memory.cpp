@@ -256,8 +256,8 @@ TEST(test_memory, kupl_memcpy_async)
 
 void* memcpy_async_task1(void* arg)
 {
-    char *src = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1024);
-    char *dst = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1024);
+    char *src = (char *)malloc(sizeof(char) * 1024);
+    char *dst = (char *)malloc(sizeof(char) * 1024);
     array_1d_init(src, 1024);
     kupl_event_h event = kupl_event_create();
     int ret = kupl_memcpy_async(dst, src, sizeof(char) * 1024, nullptr, event);
@@ -272,8 +272,8 @@ void* memcpy_async_task1(void* arg)
         }
     }
     kupl_event_destroy(event);
-    kupl_free(KUPL_MEM_DEFAULT, src);
-    kupl_free(KUPL_MEM_DEFAULT, dst);
+    free(src);
+    free(dst);
     return NULL;
 }
 
@@ -307,8 +307,8 @@ kupl_queue_h queue;
 
 void* memcpy_async_task3(void* arg)
 {
-    char *src = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1024);
-    char *dst = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1024);
+    char *src = (char *)malloc(sizeof(char) * 1024);
+    char *dst = (char *)malloc(sizeof(char) * 1024);
     array_1d_init(src, 1024);
     int ret = kupl_memcpy_async(dst, src, sizeof(char) * 1024, nullptr, event);
     if (ret == KUPL_OK) {
@@ -321,8 +321,8 @@ void* memcpy_async_task3(void* arg)
             printf("memcpy async failed.\n");
         }
     }
-    kupl_free(KUPL_MEM_DEFAULT, src);
-    kupl_free(KUPL_MEM_DEFAULT, dst);
+    free(src);
+    free(dst);
     return NULL;
 }
 
@@ -555,8 +555,8 @@ TEST(test_memory, kupl_memcpy2d_async)
 
 void* memcpy2d_async_task1(void* arg)
 {
-    char *src = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
-    char *dst = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
+    char *src = (char *)malloc(sizeof(char) * 1 * 1024);
+    char *dst = (char *)malloc(sizeof(char) * 1 * 1024);
     kupl_event_h event = kupl_event_create();
 
     array_2d_init(src, 1, 1024, 1024);
@@ -572,15 +572,15 @@ void* memcpy2d_async_task1(void* arg)
     }
 
     kupl_event_destroy(event);
-    kupl_free(KUPL_MEM_DEFAULT, src);
-    kupl_free(KUPL_MEM_DEFAULT, dst);
+    free(src);
+    free(dst);
     return NULL;
 }
 
 void* memcpy2d_async_task2(void* arg)
 {
-    char *src = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
-    char *dst = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
+    char *src = (char *)malloc(sizeof(char) * 1 * 1024);
+    char *dst = (char *)malloc(sizeof(char) * 1 * 1024);
     kupl_event_h event = kupl_event_create();
     kupl_queue_h queue = kupl_queue_create();
 
@@ -599,15 +599,15 @@ void* memcpy2d_async_task2(void* arg)
 
     kupl_event_destroy(event);
     kupl_queue_destroy(queue);
-    kupl_free(KUPL_MEM_DEFAULT, src);
-    kupl_free(KUPL_MEM_DEFAULT, dst);
+    free(src);
+    free(dst);
     return NULL;
 }
 
 void* memcpy2d_async_task3(void* arg)
 {
-    char *src = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
-    char *dst = (char *)kupl_malloc(KUPL_MEM_DEFAULT, sizeof(char) * 1 * 1024);
+    char *src = (char *)malloc(sizeof(char) * 1 * 1024);
+    char *dst = (char *)malloc(sizeof(char) * 1 * 1024);
 
     array_2d_init(src, 1, 1024, 1024);
     int ret = kupl_memcpy2d_async(dst, sizeof(char) * 1024, src,
@@ -620,8 +620,8 @@ void* memcpy2d_async_task3(void* arg)
             printf("memcpy2d async failed.\n");
         }
     }
-    kupl_free(KUPL_MEM_DEFAULT, src);
-    kupl_free(KUPL_MEM_DEFAULT, dst);
+    free(src);
+    free(dst);
     return NULL;
 }
 

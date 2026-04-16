@@ -31,10 +31,10 @@ static std::mutex g_mtx;
 
 static const kupl_version_t g_version = {
     .product_name = "Kunpeng HPCKit",
-    .product_version = "26.0.RC1",
+    .product_version = "26.1.RC1",
     .component_name = "KUPL",
     .component_abi_version = "1",
-    .component_version = "26.0.RC1",
+    .component_version = "26.1.RC1",
 #if defined(__clang__)
     .component_appendinfo = "bisheng",
 #elif defined(__GNUC__)

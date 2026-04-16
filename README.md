@@ -1,13 +1,13 @@
 # KUPL
 
-## RELEASE-NOTES
+## 🔥Release Notes
 - [2026/03] KUPL 项目首次上线，支持众核并行、数据管理和矩阵编程能力。
 
-## 概述
+## 🚀概述
 
 鲲鹏统一并行加速库（Kunpeng Unified Parallel Library，以下简称KUPL）提供了基于鲲鹏平台优化的并行加速基础库函数，所有接口用C/C++、汇编语言实现。本加速库提供包括底层线程管理、任务调度、线程同步、内存申请、共享内存申请、共享内存通信、矩阵编程计算等在内的基础功能，充分发挥鲲鹏处理器的硬件特性，提供高性能的基础接口。
 
-## 版本配套
+## 📝版本配套
 
 - 运行平台
     - 鲲鹏 920 系列
@@ -26,7 +26,7 @@
     - KylinSec OS Linux 3（Qomolangma） AArch64（3.5.2）
     - KylinSec OS Linux 3（Qomolangma） AArch64（3.5.3）
 
-## 编译安装
+## ⚡️编译安装
 
 ### 1. [获取 HPCKit 软件包](https://www.hikunpeng.com/document/detail/zh/kunpenghpcs/hpckit/instg/KunpengHPCKit_install_007.html)
 > https://www.hikunpeng.com/developer/hpc/hpckit-download
@@ -96,7 +96,7 @@ sh build.sh --build_kind=test --compiler=clang
 
 sh run_lcov.sh test clang
 ```
-## 学习教程
+## 📖学习教程
 
 若您已学习编译安装，对本项目有一定认知，并希望深入了解和体验项目，请访问下述详细教程。
 
@@ -117,7 +117,7 @@ sh run_lcov.sh test clang
 ### 矩阵编程
 [矩阵编程接口函数](https://www.hikunpeng.com/document/detail/zh/kunpenghpcs/hpckit/devg/KunpengHPCKit_developer_104.html): 介绍了 KUPL 提供的矩阵编程相关接口，包括加速矩阵乘计算与拷贝等能力。
 
-## 目录结构
+## 🔍目录结构
 
 ```
 ├── cmake                              # 项目工程编译目录
@@ -142,10 +142,10 @@ sh run_lcov.sh test clang
 └── run_lcov.sh                        # 安装依赖包脚本
 ```
 
-## 联系我们
+## 🤝联系我们
 
 本项目功能和文档正在持续更新和完善中，建议您关注最新版本。
 
 - **问题反馈**：通过 [【Issues】](https://atomgit.com/kunpengcompute/kupl/issues)提交问题。
-- **社区互动**：通过 [【讨论】](https://atomgit.com/kunpengcompute/kupl/discussions)参与交流。
+- **社区互动**：通过 [【鲲鹏论坛（HPC专区）】](https://www.hikunpeng.com/forum/forum-0187135482144798003-1.html)参与交流。
 - **技术专栏**：通过 [【鲲鹏社区】](https://www.hikunpeng.com/developer/techArticles) 获取技术文章，如系列化教程、优秀实践等。

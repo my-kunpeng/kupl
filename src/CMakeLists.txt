@@ -152,7 +152,7 @@ if(NOT LIB_RT)
 endif()
 target_link_libraries(${LIBKUPL_NAME} ${LIB_RT} pthread dl numa)
 
-set_target_properties(${LIBKUPL_NAME} PROPERTIES VERSION 1.26.0.RC1 SOVERSION 1)
+set_target_properties(${LIBKUPL_NAME} PROPERTIES VERSION 1.26.1.RC1 SOVERSION 1)
 
 #Install
 libkupl_header_install()
