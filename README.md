@@ -40,6 +40,28 @@ tar xvf HPCKit_26.0.RC1_Linux-aarch64.tar.gz
 sh HPCKit_26.0.RC1_Linux-aarch64/install.sh -y --prefix=[HPCKit安装目录]
 ```
 ### 3. [设置环境变量](https://www.hikunpeng.com/document/detail/zh/kunpenghpcs/hpckit/instg/KunpengHPCKit_install_014.html)
+#### 前置条件
+
+已配置yum源。执行以下命令检查节点YUM源是否已配置，确保回显中有OS对应的YUM源。
+```
+yum list | grep kernel
+```
+
+已安装module工具。
+执行以下命令检查是否已安装module工具。
+```
+yum list installed | grep environment-modules.aarch64
+```
+回显有如下信息说明已安装module工具。
+```
+environment-modules.aarch64                        5.0.1-3.oe2203sp1                @OS
+```
+如果未安装module工具，执行以下命令安装，并加载环境变量。
+```
+yum install -y environment-modules
+source /etc/profile.d/modules.sh
+```
+
 #### 加载 module
 ```
 module use [HPCKit安装目录]/HPCKit/latest/modulefiles
@@ -57,11 +79,13 @@ module load bisheng/compiler5.1.0.2/bishengmodule
 ```
 ### 4. 安装编译所需依赖
 
-安装 cmake
+安装 cmake, numactl, numactl-devel
 ```
-yum install cmake
+yum install cmake numactl numactl-devel
 ```
-### 5. 编译
+### 5. 编译 KUPL
+克隆或者下载软件包，并进入到软件包的根目录
+
 确认您需要的编译的类型（GCC 或 Bisheng），在终端执行相应的加载命令：
 - 若使用 GCC
 ```
@@ -87,6 +111,23 @@ sh build.sh --build_kind=test
 sh run_lcov.sh
 ```
 #### 编译运行测试程序(BiSheng)
+需要编译并加载 Bisheng 版本的 googletest。
+
+指定编译 googletest 的编译器为 Bisheng
+```
+export CC=clang
+export CXX=clang++
+```
+参考 https://github.com/google/googletest/tree/main/googletest 编译 googletest
+
+将 googletest 加入到环境变量中
+```
+export INCLUDE=[googletest安装目录]/include:$INCLUDE
+export LIBRARY_PATH=[googletest安装目录]/lib64:$LIBRARY_PATH
+export LD_LIBRARY_PATH=[googletest安装目录]/lib64:$LD_LIBRARY_PATH
+```
+编译运行测试程序
+
 ```
 module unload gcc/hmpi26.0.RC1/release
 
