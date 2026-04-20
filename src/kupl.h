@@ -63,6 +63,7 @@ kupl_export int kupl_get_version(kupl_version_t *version);
 #define KUPL_MAX_DIM_SIZE  3
 #define KUPL_CONCURRENCY_DEFAULT (-1)
 #define KUPL_BLOCKSIZE_DEFAULT   0
+#define KUPL_ASYNC_SYNC        (-1)
 
 typedef struct kupl_range {
     int64_t lower;                          /**< Pointer to loop lower bound in ult structure */
@@ -724,6 +725,7 @@ typedef void (*kupl_queue_item_func_t)(void *args);
 enum kupl_queue_item_desc_field {
     KUPL_QUEUE_ITEM_DESC_FIELD_NAME       = 1uL << 0,   /**< enable queue_item_desc.name member */
     KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP     = 1uL << 1,   /**< enable queue_item_desc.egroup member */
+    KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE  = 1uL << 2,   /**< enable queue_item_desc.args_size member */
 };
 
 /** @brief the description of kupl kernel */
@@ -733,6 +735,7 @@ typedef struct kupl_queue_item_desc {
     void                    *args;          /**< the arguments of func */
     const char              *name;          /**< the kernel name */
     kupl_egroup_h           egroup;
+    size_t                  args_size;      /**< the arguments size */
 } kupl_queue_item_desc_t;
 
 /**
@@ -743,6 +746,21 @@ typedef struct kupl_queue_item_desc {
  * @return int          Return KUPL_OK for success
  */
 kupl_export int kupl_queue_submit(kupl_queue_h queue, kupl_queue_item_desc_t *desc);
+
+/**
+ * @brief   Create queue with index
+ *
+ * @param [in] index    The index of queue to create
+ * @return kupl_queue_h         Return the handler of queue
+ */
+kupl_export kupl_queue_h kupl_queue_acquire(int index);
+
+/**
+ * @brief   Wait all queues created by kupl_queue_acquire
+ *
+ * @return int          return KUPL_OK for success
+ */
+kupl_export int kupl_queue_wait_all();
 
 /** @brief the status for event */
 typedef enum kupl_event_status {

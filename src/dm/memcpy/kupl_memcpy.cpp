@@ -268,65 +268,12 @@ static inline int kupl_get_core_index()
     return core_index;
 }
 
-static int g_kupl_memcpy_threads = 0;
-void kupl_set_kernel_concurrency(int num)
-{
-    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
-        return;
-    }
-    if (num < 1 || num > kupl_get_num_executors()) {
-        kupl_warn("number of threads out of the 1..kupl_get_num_executors() range,"
-                   " so set the number to kupl_get_num_executors().");
-        g_kupl_memcpy_threads = kupl_get_num_executors();
-        return;
-    }
-    g_kupl_memcpy_threads = num;
-}
-
-int kupl_get_kernel_concurrency()
-{
-    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
-        return KUPL_ERROR;
-    }
-    if (g_kupl_memcpy_threads == 0) {
-        return kupl_get_num_executors();
-    }
-    return g_kupl_memcpy_threads;
-}
-
-static thread_local int g_kupl_memcpy_threads_local = 0;
-void kupl_set_kernel_concurrency_local(int num)
-{
-    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
-        return;
-    }
-    if (num < 1 || num > kupl_get_num_executors()) {
-        kupl_warn("number of threads out of the [1..kupl_get_num_executors()] range,"
-                   " so set the number to kupl_get_num_executors().");
-        g_kupl_memcpy_threads_local = kupl_get_num_executors();
-        return;
-    }
-    g_kupl_memcpy_threads_local = num;
-}
-
-int kupl_get_kernel_concurrency_local()
-{
-    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
-        return KUPL_ERROR;
-    }
-    if (g_kupl_memcpy_threads_local == 0) {
-        return kupl_get_kernel_concurrency();
-    }
-    return g_kupl_memcpy_threads_local;
-}
-
 static int g_kupl_memcpy_mt_threshold = 0;
 
 int kupl_memcpy_init()
 {
     // read memcpy env before main
     g_kupl_memcpy_mt_threshold = kupl_config_get_value(KUPL_MEMCPY_MT_THRESHOLD);
-    g_kupl_memcpy_threads = kupl_config_get_value(KUPL_KERNEL_CONCURRENCY);
 
     if (kupl_arch_detect() != KUPL_CPU_HISILICOM_920F) {
         return KUPL_OK;
@@ -477,7 +424,7 @@ int kupl_memcpy(void *dst, const void *src, size_t count)
             .src = src,
             .count = count
         };
-        int threads = g_kupl_memcpy_threads_local > 0 ? g_kupl_memcpy_threads_local : g_kupl_memcpy_threads;
+        int threads = kupl_get_kernel_concurrency();
         kupl_invoke_parallel(kupl_memcpy_pf_task, (&package), threads);
     }
     return KUPL_OK;
@@ -772,7 +719,7 @@ int kupl_memcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size
             .width = width,
             .height = height
         };
-        int threads = g_kupl_memcpy_threads_local > 0 ? g_kupl_memcpy_threads_local : g_kupl_memcpy_threads;
+        int threads = kupl_get_kernel_concurrency();
         kupl_invoke_parallel(kupl_memcpy2d_pf_task, (&package), threads);
     }
     return KUPL_OK;

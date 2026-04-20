@@ -107,9 +107,6 @@ static void event_func(void *args)
         event->func(event->args);
     }
     kupl_event_set_status(event, KUPL_EVENT_STATUS_COMPLETE);
-    if (event->type == KUPL_EVENT_TYPE_KERNEL) {
-        kupl_task_cleanup(event->task);
-    }
     kupl_dequeue_event(event->q, event);
 }
 

@@ -291,3 +291,27 @@ TEST_F(test_queue_event, kupl_event_wait_twice)
     ret = kupl_event_wait(e_);
     ASSERT_TRUE(ret == KUPL_OK);
 }
+
+TEST_F(test_queue_event, kupl_queue_acquire_destroy)
+{
+    auto queue1 = kupl_queue_acquire(0);
+    ASSERT_TRUE(queue1 != nullptr);
+    auto queue2 = kupl_queue_acquire(1);
+    ASSERT_TRUE(queue2 != nullptr);
+    auto queue3 = kupl_queue_acquire(0);
+    ASSERT_TRUE(queue3 == queue1);
+    kupl_queue_destroy(queue1);
+    kupl_queue_destroy(queue2);
+}
+
+TEST_F(test_queue_event, kupl_queue_wait_all)
+{
+    auto queue1 = kupl_queue_acquire(0);
+    ASSERT_TRUE(queue1 != nullptr);
+
+    auto queue2 = kupl_queue_acquire(1);
+    ASSERT_TRUE(queue2 != nullptr);
+
+    int ret = kupl_queue_wait_all();
+    ASSERT_TRUE(ret == KUPL_OK);
+}

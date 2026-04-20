@@ -419,3 +419,63 @@ TEST_F(test_queue_submit, kupl_queue_submit_lambda)
     kupl_queue_wait(q1_);
     EXPECT_EQ(sum, total);
 }
+
+static void args_func(void *args)
+{
+    int *a = (int *)args;
+    ASSERT_TRUE(*a == 0);
+    *a = *a + 1;
+}
+
+TEST_F(test_queue_submit, kupl_queue_submit_args_size)
+{
+    int a = 0;
+    kupl_queue_item_desc_t desc = {
+        .field_mask = 0,
+        .func = args_func,
+        .args = &a
+    };
+    kupl_queue_submit(q1_, &desc);
+    kupl_queue_wait(q1_);
+    ASSERT_TRUE(a == 1);
+
+    a = 0;
+    desc = {
+        .field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE,
+        .func = args_func,
+        .args = &a,
+        .args_size = sizeof(a)
+    };
+    kupl_queue_submit(q1_, &desc);
+    kupl_queue_wait(q1_);
+    ASSERT_TRUE(a == 0);
+}
+
+static void acquire_func(void *args)
+{
+    int eid = kupl_get_executor_num();
+    ASSERT_TRUE(eid == 0);
+}
+
+TEST_F(test_queue_submit, kupl_queue_submit_acquire)
+{
+    auto queue = kupl_queue_acquire(1);
+    kupl_queue_item_desc_t desc = {
+        .field_mask = 0,
+        .func = acquire_func,
+        .args = nullptr,
+    };
+    kupl_queue_submit(queue, &desc);
+    kupl_queue_wait(queue);
+}
+
+TEST_F(test_queue_submit, kupl_queue_submit_acquire_sync)
+{
+    auto queue = kupl_queue_acquire(KUPL_ASYNC_SYNC);
+    kupl_queue_item_desc_t desc = {
+        .field_mask = 0,
+        .func = acquire_func,
+        .args = nullptr,
+    };
+    kupl_queue_submit(queue, &desc);
+}

@@ -28,6 +28,8 @@ static int g_executor_count_initial = CPU_SETSIZE;
 static cpu_set_t g_executor_set;
 static cpu_set_t g_executor_set_expand;
 static kupl_lock_t *g_executor_lock = nullptr;
+static int g_kernel_concurrency = -1;
+static thread_local int g_kernel_concurrency_local = -1;
 
 typedef struct kupl_cv_mutex {
     kupl_cv_mutex() : m_mutex(), m_cv() {}
@@ -351,4 +353,57 @@ void kupl_executor_disable(int executor_id)
     }
 
     g_executors[executor_id].exe.stop = true;
+}
+
+void kupl_set_kernel_concurrency(int num)
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return;
+    }
+    if (num < 1 || num > kupl_get_num_executors()) {
+        kupl_warn("number of threads out of the 1..kupl_get_num_executors() range,"
+                   " so set the number to kupl_get_num_executors().");
+        g_kernel_concurrency = kupl_get_num_executors();
+        return;
+    }
+    g_kernel_concurrency = num;
+}
+
+int kupl_get_kernel_concurrency(void)
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return KUPL_ERROR;
+    }
+    if (g_kernel_concurrency_local != -1) {
+        return g_kernel_concurrency_local;
+    }
+    if (g_kernel_concurrency != -1) {
+        return g_kernel_concurrency;
+    }
+    return kupl_get_num_executors();
+}
+
+void kupl_set_kernel_concurrency_local(int num)
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return;
+    }
+    if (num < 1 || num > kupl_get_num_executors()) {
+        kupl_warn("number of threads out of the 1..kupl_get_num_executors() range,"
+                   " so set the number to kupl_get_num_executors().");
+        g_kernel_concurrency_local = kupl_get_num_executors();
+        return;
+    }
+    g_kernel_concurrency_local = num;
+}
+
+int kupl_get_kernel_concurrency_local(void)
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return KUPL_ERROR;
+    }
+    if (g_kernel_concurrency_local != -1) {
+        return g_kernel_concurrency_local;
+    }
+    return kupl_get_num_executors();
 }
