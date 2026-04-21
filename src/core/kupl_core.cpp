@@ -19,6 +19,7 @@
 #include "executor/kupl_executor.h"
 #include "mt/scheduler/kupl_sched.h"
 #include "mt/kupl_graph.h"
+#include "mt/kupl_queue.h"
 #include "mt/kupl_parallel_for.h"
 #include "memory/shm/kupl_shm.h"
 #include "utils/kupl_utils.h"
@@ -93,8 +94,14 @@ int kupl_mt_module_init()
         goto err_sched_init;
     }
 
+    if (kupl_unlikely(kupl_queue_init() != KUPL_OK)) {
+        goto err_queue_init;
+    }
+
     return KUPL_OK;
 
+err_queue_init:
+    kupl_sched_fini();
 err_sched_init:
     return KUPL_ERROR;
 }
@@ -103,6 +110,7 @@ static kupl_always_inline
 void kupl_mt_module_fini()
 {
     kupl_sched_fini();
+    kupl_queue_fini();
 }
 
 static kupl_always_inline

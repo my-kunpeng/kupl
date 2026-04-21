@@ -702,8 +702,8 @@ namespace kupl {
             taskloop_args->lambda_func = args->lambda_func;
             kupl_range_t *nd_range_args = taskloop_args->range.nd_range;
             taskloop_args->range.dim = info.dim;
-            int64_t  task_id_tmp = task_id;
-            int64_t  block_idx = 0;
+            int64_t task_id_tmp = task_id;
+            int64_t block_idx = 0;
             for (int d = 0; d < info.dim; d++) {
                 block_idx = task_id_tmp % info.blocks[d];
                 task_id_tmp /= info.blocks[d];

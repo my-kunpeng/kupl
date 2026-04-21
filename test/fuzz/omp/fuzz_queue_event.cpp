@@ -60,6 +60,40 @@ static void invalid_example()
 
     kernel_desc.range->nd_range[0].upper = UINT64_MAX;
     kupl::queue_submit(queue, &kernel_desc,  [&](const kupl_nd_range_t *nd_range) {});
+
+    // args_size
+    int a = 0;
+    kupl_queue_item_desc_t desc = {
+        .field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE | KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP,
+        .func = func_test,
+        .args = &a,
+        .egroup = egroup,
+        .args_size = sizeof(a)
+    };
+    kupl_queue_submit(queue, &desc);
+    kupl_queue_wait(queue);
+
+    // queue acquire submit
+    auto queue1 = kupl_queue_acquire(1);
+    desc = {
+        .field_mask = 0,
+        .func = func_test,
+        .args = nullptr,
+    };
+    kupl_queue_submit(queue1, &desc);
+    kupl_queue_wait(queue1);
+
+    // sync queue acquire submit
+    auto queue_sync = kupl_queue_acquire(KUPL_ASYNC_SYNC);
+    desc = {
+        .field_mask = 0,
+        .func = func_test,
+        .args = nullptr,
+    };
+    kupl_queue_submit(queue_sync, &desc);
+
+    kupl_queue_destroy(queue);
+    kupl_egroup_destroy(egroup);
 }
 
 void queue_event_example(int test_count)
@@ -72,6 +106,10 @@ void queue_event_example(int test_count)
     DT_FUZZ_START(0, test_count, (char *)__func__, 0)
     {
         int cnt = 0;
+        int index = *(int*)DT_SetGetS32(&g_Element[cnt++], 1);
+        auto q1 = kupl_queue_acquire(index);
+        kupl_queue_wait_all();
+
         auto queue = kupl_queue_create();
         auto queue2 = kupl_queue_create();
         auto event = kupl_event_create();
@@ -145,6 +183,7 @@ void queue_event_example(int test_count)
         kupl_event_destroy(event);
         kupl_queue_destroy(queue2);
         kupl_queue_destroy(queue);
+        kupl_queue_destroy(q1);
     }
     DT_FUZZ_END();
     printf("end -- %s\n", __func__);
