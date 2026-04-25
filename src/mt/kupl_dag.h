@@ -13,6 +13,8 @@
 #define KUPL_DAG_H
 
 #include <cstdint>
+#include <unordered_map>
+#include <limits.h>
 #include "utils/arch/kupl_atomic.h"
 #include "utils/debug/kupl_log.h"
 #include "utils/lock/kupl_lock.h"
@@ -73,6 +75,33 @@ uint32_t kupl_gnode_release_ready_safe(kupl_gnode_t *gnode, kupl_task_t **ready_
 #define kupl_gnode_has_deps(_gnode) ((_gnode)->successors.head != nullptr)
 
 #define kupl_gnode_get_task(_gnode) kupl_container_of((_gnode), kupl_task_t, gnode)
+
+#define KUPL_MAX_LOCAL_DEP_COUNT 128
+#define KUPL_DAG_TASK_READY 1
+#define KUPL_DAG_TASK_NOT_READY 0
+#define KUPL_TASK_DEP_ALL_ADDR (void*)ULONG_MAX
+
+typedef struct kupl_addr_entry {
+    kupl_gnode_t        *out;       // data write
+    kupl_slist_t        *in;        // data read
+} kupl_addr_entry_t;
+
+kupl_addr_entry_t* kupl_addr_entry_create(int geid);
+
+void kupl_addr_entry_destroy(kupl_addr_entry_t *entry, int geid);
+
+typedef std::unordered_map<const void*, kupl_addr_entry_t*> kupl_dag_hash_t;
+
+typedef struct kupl_dag {
+    kupl_dag_hash_t     *hash; // store all addr, for trans in/out to node/dep
+    pthread_spinlock_t  lock;
+} kupl_dag_t;
+
+kupl_dag_t* kupl_dag_create(int geid);
+
+void kupl_dag_destroy(kupl_dag_t* dag, int geid);
+
+int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_dep_list, uint32_t task_dep_cnt, int geid);
 
 #ifdef __cplusplus
 }

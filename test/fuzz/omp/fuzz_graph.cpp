@@ -19,8 +19,106 @@ static void func_test(void *args)
 {
 }
 
+void graph_submit_with_dep()
+{
+    kupl_graph_h graph = kupl_graph_create(nullptr);
+    int a, b, c, d1, all;
+    kupl_task_dep_t a_dep[2] = {
+        {&a, KUPL_TASK_DEP_TYPE_IN},
+        {&b, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    kupl_task_desc_t desc = {
+        .field_mask = KUPL_TASK_DESC_FIELD_DEP,
+        .func = func_test,
+        .args = nullptr,
+        .name = "A",
+        .ndep = 2,
+        .dep_list = a_dep,
+    };
+    kupl_task_info_t info = {
+        .type = KUPL_TASK_TYPE_SINGLE,
+        .desc = &desc,
+    };
+
+    kupl_graph_submit(graph, &info);
+
+    kupl_task_dep_t b_dep[2] = {
+        {&b, KUPL_TASK_DEP_TYPE_INOUT},
+        {&c, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    desc.name = "B";
+    desc.dep_list = b_dep;
+    kupl_graph_submit(graph, &info);
+
+    kupl_task_dep_t c1_dep[2] = {
+        {&b, KUPL_TASK_DEP_TYPE_IN},
+        {&d1, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    desc.name = "C1";
+    desc.dep_list = c1_dep;
+    kupl_graph_submit(graph, &info);
+
+    kupl_task_dep_t all_dep[1] = {
+        {&all, KUPL_TASK_DEP_TYPE_ALL},
+    };
+    desc.name = "ALL";
+    desc.dep_list = all_dep;
+    desc.ndep = 1;
+    kupl_graph_submit(graph, &info);
+
+    kupl_graph_wait(graph);
+    kupl_graph_destroy(graph);
+}
+
+void graph_submit_with_dep_lambda()
+{
+    kupl_graph_h graph_lambda = kupl_graph_create(nullptr);
+    int a, b, c, d1, all;
+    kupl_task_dep_t a_dep[2] = {
+        {&a, KUPL_TASK_DEP_TYPE_IN},
+        {&b, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    kupl_task_desc_t desc = {
+        .field_mask = KUPL_TASK_DESC_FIELD_DEP,
+        .name = "A",
+        .ndep = 2,
+        .dep_list = a_dep,
+    };
+
+    kupl::graph_submit(graph_lambda, &desc, [&]() {});
+
+    kupl_task_dep_t b_dep[2] = {
+        {&b, KUPL_TASK_DEP_TYPE_INOUT},
+        {&c, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    desc.name = "B";
+    desc.dep_list = b_dep;
+    kupl::graph_submit(graph_lambda, &desc, [&]() {});
+
+    kupl_task_dep_t c1_dep[2] = {
+        {&b, KUPL_TASK_DEP_TYPE_IN},
+        {&d1, KUPL_TASK_DEP_TYPE_OUT},
+    };
+    desc.name = "C1";
+    desc.dep_list = c1_dep;
+    kupl::graph_submit(graph_lambda, &desc, [&]() {});
+
+    kupl_task_dep_t all_dep[1] = {
+        {&all, KUPL_TASK_DEP_TYPE_ALL},
+    };
+    desc.name = "ALL";
+    desc.dep_list = all_dep;
+    desc.ndep = 1;
+    kupl::graph_submit(graph_lambda, &desc, [&]() {});
+
+    kupl_graph_wait(graph_lambda);
+    kupl_graph_destroy(graph_lambda);
+}
+
 void graph_base_example(int test_count)
 {
+    graph_submit_with_dep();
+    graph_submit_with_dep_lambda();
     int executors_bak[EGROUP_NUM_MAX] = {0};
     for (int i = 0; i < EGROUP_NUM_MAX; i++) {
         executors_bak[i] = 1;

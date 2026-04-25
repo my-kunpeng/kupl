@@ -42,6 +42,12 @@ kupl_graph_h kupl_graph_create(kupl_egroup_h egroup)
     if (kupl_unlikely(graph == nullptr)) {
         return nullptr;
     }
+    int geid = kupl_get_executor_num();
+    graph->dag = kupl_dag_create(geid);
+    if (kupl_unlikely(graph->dag == nullptr)) {
+        kupl_graph_destroy(graph);
+        return nullptr;
+    }
 
     graph->sched = sched;
     CPU_ZERO(&graph->eid_set);
@@ -50,7 +56,7 @@ kupl_graph_h kupl_graph_create(kupl_egroup_h egroup)
             CPU_OR(&graph->eid_set, &graph->eid_set, &egroup->cur.eid_set);
         } else {
             kupl_warn("graph executor group invalid.");
-            kupl_free_inner(graph);
+            kupl_graph_destroy(graph);
             return nullptr;
         }
     } else {
@@ -64,6 +70,12 @@ void kupl_graph_destroy(kupl_graph_h graph)
 {
     if (kupl_unlikely(graph == nullptr)) {
         return;
+    }
+
+    int geid = kupl_get_executor_num();
+    if (graph->dag != nullptr) {
+        kupl_dag_destroy(graph->dag, geid);
+        graph->dag = nullptr;
     }
 
     kupl_free_inner(graph);
@@ -112,6 +124,17 @@ int kupl_graph_add_task(kupl_graph_h graph, kupl_task_desc_t *task_desc)
     kupl_task_t *task = kupl_task_init(&task_param, geid);
     if (kupl_unlikely(task == nullptr)) {
         return kupl_log_error_return(ERROR, "task create failed");
+    }
+    if (task_desc->field_mask & KUPL_TASK_DESC_FIELD_DEP) {
+        if (kupl_unlikely(task_desc->ndep != 0 && task_desc->dep_list == nullptr)) {
+            return kupl_log_error_return(ERROR, "dep_list is nullptr");
+        }
+        int ret = kupl_dag_add_task(graph->dag, task, task_desc->dep_list, (uint32_t)task_desc->ndep, geid);
+        if (ret == KUPL_ERROR) {
+            return KUPL_ERROR;
+        } else if (ret == KUPL_DAG_TASK_NOT_READY) {
+            return KUPL_OK;
+        }
     }
     kupl_sched_add_tb(graph->sched, &task->tb);
     return KUPL_OK;
@@ -512,6 +535,7 @@ namespace kupl {
             return KUPL_ERROR;
         }
         task->tb.ref = 1;
+        KUPL_ATOMIC_ST(&task->tb.state, KUPL_TB_STATE_INIT);
 
         lambda_func_data *data = reinterpret_cast<lambda_func_data *>(task->udata);
         memset((void*)data, 0, sizeof(lambda_func_data));
@@ -535,6 +559,17 @@ namespace kupl {
         if (KUPL_ERROR == kupl_gnode_init(task->gnode)) {
             kupl_task_cleanup(task);
             return KUPL_ERROR;
+        }
+        if (desc->field_mask & KUPL_TASK_DESC_FIELD_DEP) {
+            if (kupl_unlikely(desc->ndep != 0 && desc->dep_list == nullptr)) {
+                return kupl_log_error_return(ERROR, "dep_list is nullptr");
+            }
+            int ret = kupl_dag_add_task(graph->dag, task, desc->dep_list, (uint32_t)desc->ndep, geid);
+            if (ret == KUPL_ERROR) {
+                return KUPL_ERROR;
+            } else if (ret == KUPL_DAG_TASK_NOT_READY) {
+                return KUPL_OK;
+            }
         }
         kupl_sched_add_tb(graph->sched, &task->tb);
         return KUPL_OK;
