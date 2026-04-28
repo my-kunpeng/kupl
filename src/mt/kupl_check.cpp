@@ -35,7 +35,7 @@ int kupl_check_range(kupl_nd_range_t *range, kupl_loop_policy_type_t policy)
         if (kupl_unlikely((upper <= lower && step > 0)
                           || (upper >= lower && step < 0)
                           || (step == 0))) {
-            return kupl_log_error_return(ERROR, "the range input is not support!");
+            return kupl_log_error_return(WARN, "the range input is not support!");
         }
         switch (policy) {
             case KUPL_LOOP_POLICY_STATIC:

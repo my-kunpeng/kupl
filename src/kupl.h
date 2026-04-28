@@ -165,6 +165,32 @@ do {                                                                            
 
 #define KUPL_ALL_EXECUTORS nullptr
 
+typedef enum kupl_datatype {
+    KUPL_DATATYPE_INT,
+    KUPL_DATATYPE_FLOAT,
+    KUPL_DATATYPE_DOUBLE,
+    KUPL_DATATYPE_FLOAT_COMPLEX,
+    KUPL_DATATYPE_DOUBLE_COMPLEX,
+} kupl_datatype_t;
+
+typedef enum kupl_reduce_op {
+    KUPL_RD_ADD,
+    KUPL_RD_SUB,
+    KUPL_RD_MAX,
+    KUPL_RD_MIN,
+} kupl_reduce_op_t;
+
+typedef struct kupl_reduce_item {
+    void                *buffer;
+    kupl_datatype_t     type;
+    kupl_reduce_op_t    op;
+} kupl_reduce_item_t;
+
+typedef struct kupl_reduce_args {
+    int                 num;
+    kupl_reduce_item_t  *items;
+} kupl_reduce_args_t;
+
 /**
  * @brief create a Graph
  *
@@ -485,6 +511,31 @@ typedef struct kupl_parallel_for_desc {
  * @return  KUPL_OK for success, other for failed.
  */
 kupl_export int kupl_parallel_for(kupl_parallel_for_desc_t *desc, kupl_pf_func_t func, void *args);
+
+/**
+ * @brief The parallel for reduce task routine
+ *
+ * @param [in] nd_range         the range of this routine
+ * @param [in] args             the args of this routine
+ * @param [in] tid              local thread id of this routine
+ * @param [in] tnum             local thread num of this routine
+ * @param [in] rd_args          the args for reduce
+ */
+typedef void (*kupl_pf_reduce_func_t)(kupl_nd_range_t *nd_range, void *args, int tid, int tnum,
+    kupl_reduce_args_t *rd_args);
+
+/**
+ * @brief create a parallel for reduce structure based on the parallel for description and reduce args.
+ *
+ * @param [in] desc            the description of this parallel for
+ * @param [in] func            the task routine for this parallel for
+ * @param [in] args            the args for this parallel for reduce func
+ * @param [in] rd_args         the args for reduce
+ *
+ * @return  KUPL_OK for success, other for failed.
+ */
+kupl_export int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func_t func, void *args,
+    kupl_reduce_args_t *rd_args);
 
 /**
  * @brief set the number of threads used by kupl kernel，such as memcpy

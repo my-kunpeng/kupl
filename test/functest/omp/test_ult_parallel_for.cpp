@@ -11,6 +11,8 @@
  */
 #include <omp.h>
 #include <atomic>
+#include <climits>
+#include <cfloat>
 #include "gtest/gtest.h"
 #include "kupl.h"
 
@@ -1013,4 +1015,133 @@ TEST(test_ult_pf, kupl_parallel_for_lambda_invalid)
                       KUPL_PARALLEL_FOR_DESC_FIELD_POLICY;
     ret = kupl::parallel_for(&desc, [](const kupl_nd_range_t *nd_range, const int tid, const int tnum) {});
     EXPECT_EQ(ret, KUPL_ERROR);
+}
+
+static void task_reduce_int_add(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int *data = (int *)args;
+    int localsum = 0;
+    for (int i = nd_range->nd_range[DIM_0].lower; i < nd_range->nd_range[DIM_0].upper; i++) {
+        localsum += data[i];
+    }
+    *(int *)rd_args->items[0].buffer += localsum;
+}
+
+static void task_reduce_double_sub(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    double *data = (double *)args;
+    double localsum = 0.0;
+    for (int i = nd_range->nd_range[DIM_0].lower; i < nd_range->nd_range[DIM_0].upper; i++) {
+        localsum -= data[i];
+    }
+    *(double *)rd_args->items[0].buffer += localsum;
+}
+
+static void task_reduce_int_max(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int *data = (int *)args;
+    int localmax = INT_MIN;
+    for (int i = nd_range->nd_range[DIM_0].lower; i < nd_range->nd_range[DIM_0].upper; i++) {
+        localmax = std::max(localmax, data[i]);
+    }
+    *(int *)rd_args->items[0].buffer = std::max(*(int *)rd_args->items[0].buffer, localmax);
+}
+
+static void task_reduce_float_min(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    float *data = (float *)args;
+    float localmin = FLT_MAX;
+    for (int i = nd_range->nd_range[DIM_0].lower; i < nd_range->nd_range[DIM_0].upper; i++) {
+        localmin = std::min(localmin, data[i]);
+    }
+    *(float *)rd_args->items[0].buffer = std::min(*(float *)rd_args->items[0].buffer, localmin);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_static_1d)
+{
+    const int n = 100;
+    kupl_nd_range_t range4;
+    int exe8[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    kupl_egroup_h eg8 = kupl_egroup_create(exe8, 8);
+    EXPECT_NE(eg8, nullptr);
+
+    kupl_parallel_for_desc_t desc4 = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range4,
+        .egroup = eg8,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    int intData[n];
+    double doubleData[n];
+    float floatData[n];
+    for (int i = 0; i < n; i++) {
+        intData[i] = i + 1;
+        doubleData[i] = (double)(i + 1);
+        floatData[i] = (float)(i + 1);
+    }
+
+    // Test 1: int ADD
+    KUPL_1D_RANGE_INIT(range4, 0, n);
+    int sum_int = 0;
+    kupl_reduce_item_t param_int[1] = {{ .buffer = &sum_int, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args_int = { .num = 1, .items = param_int };
+    #pragma omp parallel num_threads(8)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 0) {
+            int ret = kupl_parallel_for_reduce(&desc4, task_reduce_int_add, intData, &rd_args_int);
+            EXPECT_EQ(ret, KUPL_OK);
+        }
+        kupl_egroup_barrier(eg8);
+    }
+    EXPECT_EQ(sum_int, n * (n + 1) / 2);
+
+    // Test 2: double SUB
+    double sum_double = 0.0;
+    kupl_reduce_item_t param_double[1] = {{ .buffer = &sum_double, .type = KUPL_DATATYPE_DOUBLE, .op = KUPL_RD_SUB }};
+    kupl_reduce_args_t rd_args_double = { .num = 1, .items = param_double };
+    #pragma omp parallel num_threads(8)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 0) {
+            int ret = kupl_parallel_for_reduce(&desc4, task_reduce_double_sub, doubleData, &rd_args_double);
+            EXPECT_EQ(ret, KUPL_OK);
+        }
+        kupl_egroup_barrier(eg8);
+    }
+    EXPECT_DOUBLE_EQ(sum_double, -(double)(n * (n + 1) / 2));
+
+    // Test 3: int MAX
+    int max_int = INT_MIN;
+    kupl_reduce_item_t param_max[1] = {{ .buffer = &max_int, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_MAX }};
+    kupl_reduce_args_t rd_args_max = { .num = 1, .items = param_max };
+    #pragma omp parallel num_threads(8)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 0) {
+            int ret = kupl_parallel_for_reduce(&desc4, task_reduce_int_max, intData, &rd_args_max);
+            EXPECT_EQ(ret, KUPL_OK);
+        }
+        kupl_egroup_barrier(eg8);
+    }
+    EXPECT_EQ(max_int, n);
+
+    // Test 4: float MIN
+    float min_float = FLT_MAX;
+    kupl_reduce_item_t param_min[1] = {{ .buffer = &min_float, .type = KUPL_DATATYPE_FLOAT, .op = KUPL_RD_MIN }};
+    kupl_reduce_args_t rd_args_min = { .num = 1, .items = param_min };
+    #pragma omp parallel num_threads(8)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 0) {
+            int ret = kupl_parallel_for_reduce(&desc4, task_reduce_float_min, floatData, &rd_args_min);
+            EXPECT_EQ(ret, KUPL_OK);
+        }
+        kupl_egroup_barrier(eg8);
+    }
+    EXPECT_FLOAT_EQ(min_float, 1.0f);
+
+    kupl_egroup_destroy(eg8);
 }
