@@ -21,7 +21,7 @@ extern "C" {
 #define KUPL_BASE_HEX 16
 #define KUPL_PATH_MAX 1024
 #define KUPL_EXECUTOR_ID_MAX    1024
-#define KUPL_NUMA_MAX           255
+#define KUPL_NUMA_MAX           64
 
 
 /** @brief bit operation */

@@ -426,9 +426,7 @@ void* kupl_memory_mmap(size_t size, bool is_hbw_mmap = false, bool is_win_alloc_
     if (is_hugepage_success != KUPL_OK) {
         int ret = kupl_bind_memory_to_numa(ptr, dest_numa_id, size);
         if (ret == KUPL_ERROR) {
-            munmap(ptr, size);
-            ptr = nullptr;
-            return nullptr;
+            kupl_warn("kupl_memory_mmap bind failed, fallback to default mmap.");
         }
     }
     return ptr;

@@ -62,12 +62,7 @@ if [[ "${BUILD_KIND}" == "test" ]]; then
   KUPL_EXECUTOR_COUNT=1 KUPL_ENABLE_PRIORITY=1 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=test_queue_priority.*
   KUPL_EXECUTOR_COUNT=1 KUPL_ENABLE_PRIORITY=1 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=test_queue_priority.*
 
-  if [ "$UID" -eq 0 ]; then
-    original_hugepages=$(cat /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages)
-    echo 10 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
-    KUPL_ENABLE_HUGEPAGES=1 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=*kupl_malloc*
-    echo $original_hugepages > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
-  fi
+  KUPL_ENABLE_HUGEPAGES=1 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=*kupl_malloc*
 
   if [ $hbw_detected -eq 1 ]; then
     KUPL_EXECUTOR_BACKEND=omp KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_omp_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_detail.xml
