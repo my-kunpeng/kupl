@@ -10,12 +10,22 @@
  * See the Mulan PSL v2 for more details.
  */
 #include <atomic>
+#include <complex>
+#include <climits>
 #include "gtest/gtest.h"
 #include "kupl.h"
 
 static const int DIM_0 = 0;
 static const int DIM_1 = 1;
 static const int DIM_2 = 2;
+
+typedef struct {
+    int *data1;
+    float *data2;
+    double *data3;
+    std::complex<float> *data4;
+    std::complex<double> *data5;
+} UserArgs;
 
 static inline void task_int_loop_1D(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
 {
@@ -61,6 +71,477 @@ static inline void task_int_loop_3D(kupl_nd_range_t *nd_range, void *args, int t
             }
         }
     }
+}
+
+static inline void task_in_loop_reduce1(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int *data = (int *)args;
+    int localsum = 0;
+    for (int i = nd_range->nd_range[0].lower; i < nd_range->nd_range[0].upper; i += nd_range->nd_range[0].step) {
+        localsum += data[i];
+    }
+    *(int *)rd_args->items[0].buffer += localsum;
+}
+
+static inline void task_in_loop_reduce2(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    double *data = (double *)args;
+    double localsum = 0.0;
+    for (int i = nd_range->nd_range[0].lower; i > nd_range->nd_range[0].upper; i += nd_range->nd_range[0].step) {
+        localsum -= data[i];
+    }
+    *(double *)rd_args->items[0].buffer += localsum;
+}
+
+static inline void task_in_loop_reduce3(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    UserArgs *p = (UserArgs *)args;
+    int localsum1 = INT_MIN;
+    float localsum2 = FLT_MAX;
+    double localsum3 = 0.0;
+    std::complex<float> localsum4 = {0.0f, 0.0f};
+    std::complex<double> localsum5 = {0.0, 0.0};
+    for (int i = nd_range->nd_range[0].lower; i < nd_range->nd_range[0].upper; i += nd_range->nd_range[0].step) {
+        localsum1 = std::max(localsum1, p->data1[i]);
+        localsum2 = std::min(localsum2, p->data2[i]);
+        localsum3 -= p->data3[i];
+        localsum4 += p->data4[i];
+        localsum5 += p->data5[i];
+    }
+    *(int *)rd_args->items[0].buffer = std::max(localsum1, *(int *)rd_args->items[0].buffer);
+    *(float *)rd_args->items[1].buffer = std::min(localsum2, *(float *)rd_args->items[1].buffer);
+    *(double *)rd_args->items[2].buffer += localsum3;
+    *(std::complex<float> *)rd_args->items[3].buffer += localsum4;
+    *(std::complex<double> *)rd_args->items[4].buffer += localsum5;
+}
+
+static inline void task_in_loop_reduce4(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int localsum = 1;
+    *(int *)rd_args->items[0].buffer = localsum;
+}
+
+static inline void task_in_loop_reduce_2d(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int *data = (int *)args;
+    int localsum = 0;
+    const int COLS = 10;
+    for (int i = nd_range->nd_range[0].lower; i < nd_range->nd_range[0].upper; i++) {
+        for (int j = nd_range->nd_range[1].lower; j < nd_range->nd_range[1].upper; j++) {
+            localsum += data[i * COLS + j];
+        }
+    }
+    *(int *)rd_args->items[0].buffer += localsum;
+}
+
+static inline void task_in_loop_reduce_3d(kupl_nd_range_t *nd_range, void *args, int tid, int tnum, kupl_reduce_args_t *rd_args)
+{
+    int *data = (int *)args;
+    int localsum = 0;
+    for (int i = nd_range->nd_range[0].lower; i < nd_range->nd_range[0].upper; i++) {
+        for (int j = nd_range->nd_range[1].lower; j < nd_range->nd_range[1].upper; j++) {
+            for (int k = nd_range->nd_range[2].lower; k < nd_range->nd_range[2].upper; k++) {
+                localsum += data[i * 25 + j * 5 + k];
+            }
+        }
+    }
+    *(int *)rd_args->items[0].buffer += localsum;
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_basic)
+{
+    const int n = 100;
+    kupl_nd_range_t range_forward, range_backward;
+    KUPL_1D_RANGE_INIT(range_forward, 0, n);
+    KUPL_STRIDE_1D_RANGE_INIT(range_backward, n-1, -1, -1, 1);
+
+    int intData[n];
+    double doubleData[n];
+    for (int i = 0; i < n; i++) {
+        intData[i] = i + 1;
+        doubleData[i] = (double)(i + 1);
+    }
+
+    int exe8[8] = {0,1,2,3,4,5,6,7};
+    kupl_egroup_h eg8 = kupl_egroup_create(exe8, 8);
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range_forward,
+        .egroup = eg8,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    int sum_int = 0;
+    kupl_reduce_item_t param_int[1] = {{ .buffer = &sum_int, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args_int = { .num = 1, .items = param_int };
+
+    double sum_double = 0.0;
+    kupl_reduce_item_t param_double[1] = {{ .buffer = &sum_double, .type = KUPL_DATATYPE_DOUBLE, .op = KUPL_RD_SUB }};
+    kupl_reduce_args_t rd_args_double = { .num = 1, .items = param_double };
+
+    // STATIC policy - forward range: int ADD
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, intData, &rd_args_int);
+    EXPECT_EQ(sum_int, n * (n + 1) / 2);
+
+    // STATIC policy - backward range: double SUB
+    desc.range = &range_backward;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce2, doubleData, &rd_args_double);
+    EXPECT_DOUBLE_EQ(sum_double, -(double)(n * (n + 1) / 2));
+
+    // DYNAMIC policy - forward range: int ADD
+    desc.range = &range_forward;
+    desc.policy = KUPL_LOOP_POLICY_DYNAMIC;
+    sum_int = 0;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, intData, &rd_args_int);
+    EXPECT_EQ(sum_int, n * (n + 1) / 2);
+
+    // DYNAMIC policy - backward range: double SUB
+    desc.range = &range_backward;
+    sum_double = 0.0;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce2, doubleData, &rd_args_double);
+    EXPECT_DOUBLE_EQ(sum_double, -(double)(n * (n + 1) / 2));
+
+    kupl_egroup_destroy(eg8);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_multi_type)
+{
+    const int n = 100;
+    kupl_nd_range_t range;
+    KUPL_1D_RANGE_INIT(range, 0, n);
+
+    int data1[n];
+    float data2[n];
+    double data3[n];
+    std::complex<float> data4[n];
+    std::complex<double> data5[n];
+    for (int i = 0; i < n; i++) {
+        data1[i] = i + 1;
+        data2[i] = (float)(i + 1);
+        data3[i] = (double)(i + 1);
+        data4[i] = std::complex<float>((float)(i+1), (float)(i+1));
+        data5[i] = std::complex<double>((double)(i+1), (double)(i+1));
+    }
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range,
+        .egroup = NULL,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    kupl_reduce_item_t param[5] = {
+        { .buffer = nullptr, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_MAX },
+        { .buffer = nullptr, .type = KUPL_DATATYPE_FLOAT, .op = KUPL_RD_MIN },
+        { .buffer = nullptr, .type = KUPL_DATATYPE_DOUBLE, .op = KUPL_RD_SUB },
+        { .buffer = nullptr, .type = KUPL_DATATYPE_FLOAT_COMPLEX, .op = KUPL_RD_ADD },
+        { .buffer = nullptr, .type = KUPL_DATATYPE_DOUBLE_COMPLEX, .op = KUPL_RD_ADD }
+    };
+    kupl_reduce_args_t rd_args = { .num = 5, .items = param };
+    UserArgs args = { data1, data2, data3, data4, data5 };
+
+    // STATIC policy
+    int sum1_s = INT_MIN;
+    float sum2_s = FLT_MAX;
+    double sum3_s = 0.0;
+    std::complex<float> sum4_s(0.0f, 0.0f);
+    std::complex<double> sum5_s(0.0, 0.0);
+    param[0].buffer = &sum1_s;
+    param[1].buffer = &sum2_s;
+    param[2].buffer = &sum3_s;
+    param[3].buffer = &sum4_s;
+    param[4].buffer = &sum5_s;
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce3, &args, &rd_args);
+    EXPECT_EQ(sum1_s, n);
+    EXPECT_FLOAT_EQ(sum2_s, 1.0f);
+    EXPECT_DOUBLE_EQ(sum3_s, -(double)(n * (n + 1) / 2));
+    EXPECT_EQ(sum4_s, std::complex<float>((float)(n * (n + 1) / 2), (float)(n * (n + 1) / 2)));
+    EXPECT_EQ(sum5_s, std::complex<double>((double)(n * (n + 1) / 2), (double)(n * (n + 1) / 2)));
+
+    // DYNAMIC policy
+    desc.policy = KUPL_LOOP_POLICY_DYNAMIC;
+    int sum1_d = INT_MIN;
+    float sum2_d = FLT_MAX;
+    double sum3_d = 0.0;
+    std::complex<float> sum4_d(0.0f, 0.0f);
+    std::complex<double> sum5_d(0.0, 0.0);
+    param[0].buffer = &sum1_d;
+    param[1].buffer = &sum2_d;
+    param[2].buffer = &sum3_d;
+    param[3].buffer = &sum4_d;
+    param[4].buffer = &sum5_d;
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce3, &args, &rd_args);
+    EXPECT_EQ(sum1_d, n);
+    EXPECT_FLOAT_EQ(sum2_d, 1.0f);
+    EXPECT_DOUBLE_EQ(sum3_d, -(double)(n * (n + 1) / 2));
+    EXPECT_EQ(sum4_d, std::complex<float>((float)(n * (n + 1) / 2), (float)(n * (n + 1) / 2)));
+    EXPECT_EQ(sum5_d, std::complex<double>((double)(n * (n + 1) / 2), (double)(n * (n + 1) / 2)));
+
+    // TASK policy
+    desc.policy = KUPL_LOOP_POLICY_TASK;
+    int sum1_t = INT_MIN;
+    float sum2_t = FLT_MAX;
+    double sum3_t = 0.0;
+    std::complex<float> sum4_t(0.0f, 0.0f);
+    std::complex<double> sum5_t(0.0, 0.0);
+    param[0].buffer = &sum1_t;
+    param[1].buffer = &sum2_t;
+    param[2].buffer = &sum3_t;
+    param[3].buffer = &sum4_t;
+    param[4].buffer = &sum5_t;
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce3, &args, &rd_args);
+    EXPECT_EQ(sum1_t, n);
+    EXPECT_FLOAT_EQ(sum2_t, 1.0f);
+    EXPECT_DOUBLE_EQ(sum3_t, -(double)(n * (n + 1) / 2));
+    EXPECT_EQ(sum4_t, std::complex<float>((float)(n * (n + 1) / 2), (float)(n * (n + 1) / 2)));
+    EXPECT_EQ(sum5_t, std::complex<double>((double)(n * (n + 1) / 2), (double)(n * (n + 1) / 2)));
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_edge_cases)
+{
+    kupl_nd_range_t range;
+    int exe8[8] = {0,1,2,3,4,5,6,7};
+    kupl_egroup_h eg8 = kupl_egroup_create(exe8, 8);
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range,
+        .egroup = eg8,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    kupl_reduce_item_t param[1] = {{ .buffer = nullptr, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args = { .num = 1, .items = param };
+
+    // small range (n=5)
+    const int n_small = 5;
+    int data_small[n_small] = {1,2,3,4,5};
+    KUPL_1D_RANGE_INIT(range, 0, n_small);
+
+    int sum_small_s = 0, sum_small_d = 0;
+    param[0].buffer = &sum_small_s;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_small, &rd_args);
+    EXPECT_EQ(sum_small_s, 15);
+
+    desc.policy = KUPL_LOOP_POLICY_DYNAMIC;
+    param[0].buffer = &sum_small_d;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_small, &rd_args);
+    EXPECT_EQ(sum_small_d, 15);
+
+    // single thread (concurrency=1)
+    desc.concurrency = 1;
+    desc.policy = KUPL_LOOP_POLICY_STATIC;
+
+    const int n_single = 10;
+    int data_single[n_single];
+    for (int i = 0; i < n_single; i++) data_single[i] = i + 1;
+    KUPL_1D_RANGE_INIT(range, 0, n_single);
+
+    int sum_single_s = 0;
+    param[0].buffer = &sum_single_s;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_single, &rd_args);
+    EXPECT_EQ(sum_single_s, 55);
+
+    desc.policy = KUPL_LOOP_POLICY_DYNAMIC;
+    int sum_single_d = 0;
+    param[0].buffer = &sum_single_d;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_single, &rd_args);
+    EXPECT_EQ(sum_single_d, 55);
+
+    // large range (n=1000)
+    desc.concurrency = 4;
+    const int n_large = 1000;
+    int data_large[n_large];
+    for (int i = 0; i < n_large; i++) data_large[i] = i + 1;
+    KUPL_1D_RANGE_INIT(range, 0, n_large);
+
+    int sum_large_s = 0, sum_large_d = 0;
+    desc.policy = KUPL_LOOP_POLICY_STATIC;
+    param[0].buffer = &sum_large_s;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_large, &rd_args);
+    EXPECT_EQ(sum_large_s, n_large * (n_large + 1) / 2);
+
+    desc.policy = KUPL_LOOP_POLICY_DYNAMIC;
+    param[0].buffer = &sum_large_d;
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data_large, &rd_args);
+    EXPECT_EQ(sum_large_d, n_large * (n_large + 1) / 2);
+
+    kupl_egroup_destroy(eg8);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_no_range)
+{
+    int N = 8;
+    int sum = 0;
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = nullptr,
+        .egroup = nullptr,
+        .concurrency = N,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+    kupl_reduce_item_t param[1] = {{ .buffer = &sum, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args = { .num = 1, .items = param };
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce4, nullptr, &rd_args);
+    EXPECT_EQ(sum, N);
+}
+
+static inline void task_in_loop_nested(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    int data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    kupl_nd_range_t range;
+    KUPL_1D_RANGE_INIT(range, 0, 10);
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range,
+        .egroup = NULL,
+        .concurrency = 2,
+        .policy = KUPL_LOOP_POLICY_STATIC,
+    };
+    int sum = 0;
+    kupl_reduce_item_t params[1] = {{ .buffer = &sum, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t args_reduce = { .num = 1, .items = params };
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, data, &args_reduce);
+    EXPECT_EQ(sum, 55);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_nested)
+{
+    kupl_nd_range_t range;
+    KUPL_1D_RANGE_INIT(range, 0, 10);
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range,
+        .egroup = NULL,
+        .concurrency = 2,
+        .policy = KUPL_LOOP_POLICY_STATIC,
+    };
+    kupl_parallel_for(&desc, task_in_loop_nested, nullptr);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_nd_static)
+{
+    const int ROWS = 10, COLS = 10;
+    kupl_nd_range_t range_2d;
+    range_2d.dim = 2;
+    range_2d.nd_range[0] = {0, ROWS, 1, 1};
+    range_2d.nd_range[1] = {0, COLS, 1, 1};
+
+    int data[ROWS * COLS];
+    for (int i = 0; i < ROWS * COLS; i++) data[i] = i + 1;
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range_2d,
+        .egroup = NULL,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    int sum = 0;
+    kupl_reduce_item_t param[1] = {{ .buffer = &sum, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args = { .num = 1, .items = param };
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce_2d, data, &rd_args);
+    EXPECT_EQ(sum, ROWS * COLS * (ROWS * COLS + 1) / 2);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_3d_static)
+{
+    const int D0 = 4, D1 = 5, D2 = 5;
+    kupl_nd_range_t range_3d;
+    range_3d.dim = 3;
+    range_3d.nd_range[0] = {0, D0, 1, 1};
+    range_3d.nd_range[1] = {0, D1, 1, 1};
+    range_3d.nd_range[2] = {0, D2, 1, 1};
+
+    int total = D0 * D1 * D2;
+    int data[total];
+    for (int i = 0; i < total; i++) data[i] = i + 1;
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = &range_3d,
+        .egroup = NULL,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+
+    int sum = 0;
+    kupl_reduce_item_t param[1] = {{ .buffer = &sum, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args = { .num = 1, .items = param };
+
+    kupl_parallel_for_reduce(&desc, task_in_loop_reduce_3d, data, &rd_args);
+    EXPECT_EQ(sum, total * (total + 1) / 2);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_reduce_invalid)
+{
+    kupl_nd_range_t range;
+    KUPL_1D_RANGE_INIT(range, 0, 10);
+    int sum = 0;
+
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = nullptr,
+        .egroup = nullptr,
+        .concurrency = KUPL_CONCURRENCY_DEFAULT,
+        .policy = KUPL_LOOP_POLICY_STATIC,
+    };
+    kupl_reduce_item_t rd_items[1] = {{ .buffer = &sum, .type = KUPL_DATATYPE_INT, .op = KUPL_RD_ADD }};
+    kupl_reduce_args_t rd_args = { .num = 1, .items = rd_items };
+
+    // invalid op
+    rd_items[0].op = (kupl_reduce_op_t)-1;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+    rd_items[0].op = (kupl_reduce_op_t)100;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+
+    // invalid type
+    rd_items[0].type = (kupl_datatype_t)-1;
+    rd_items[0].op = KUPL_RD_ADD;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+    rd_items[0].type = (kupl_datatype_t)100;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+
+    // complex + MAX/MIN
+    rd_items[0].type = KUPL_DATATYPE_FLOAT_COMPLEX;
+    rd_items[0].op = KUPL_RD_MAX;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+    rd_items[0].type = KUPL_DATATYPE_DOUBLE_COMPLEX;
+    rd_items[0].op = KUPL_RD_MIN;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+
+    // rd_num invalid
+    rd_args.num = 0;
+    rd_items[0].type = KUPL_DATATYPE_INT;
+    rd_items[0].op = KUPL_RD_ADD;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+    rd_args.num = 1000;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+
+    // items nullptr
+    rd_args.num = 1;
+    rd_args.items = nullptr;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, &rd_args), KUPL_ERROR);
+
+    // rd_args nullptr
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, task_in_loop_reduce1, nullptr, nullptr), KUPL_ERROR);
+
+    // func nullptr
+    rd_args.items = rd_items;
+    EXPECT_EQ(kupl_parallel_for_reduce(&desc, nullptr, nullptr, &rd_args), KUPL_ERROR);
 }
 
 TEST(test_ult_pf, kupl_parallel_for)
