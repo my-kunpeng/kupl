@@ -36,7 +36,7 @@ __asm__(".symver pthread_spin_trylock, pthread_spin_trylock@");
 __asm__(".symver pthread_spin_unlock, pthread_spin_unlock@");
 __asm__(".symver shm_open, shm_open@");
 __asm__(".symver shm_unlink, shm_unlink@");
-__asm__(".symver __isoc23_strtol, __isoc23_strtol@");
+__asm__(".symver __isoc23_strtol, strtol@");
 
 #ifdef __cplusplus
 }
