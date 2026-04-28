@@ -13,6 +13,7 @@
 #define KUPL_GRAPH_H
 
 #include "kupl.h"
+#include "mt/kupl_dag.h"
 #include "mt/scheduler/kupl_sched.h"
 #include "utils/arch/kupl_atomic.h"
 
@@ -21,6 +22,7 @@ extern "C" {
 #endif
 
 typedef struct kupl_graph {
+    kupl_dag_t              *dag;           // graph dependency
     kupl_sched_t            *sched;         // scheduler
     KUPL_ATOMIC_UINT32      count;          // task count
     cpu_set_t               eid_set;        // graph affinity

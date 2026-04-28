@@ -202,9 +202,22 @@ enum kupl_task_desc_field {
     KUPL_TASK_DESC_FIELD_NAME      = 1uL << 0,   /**< enable kupl_task_desc.name member */
     KUPL_TASK_DESC_FIELD_PRIORITY  = 1uL << 1,   /**< enable kupl_task_desc.priority member */
     KUPL_TASK_DESC_FIELD_FLAG      = 1uL << 2,   /**< enable kupl_task_desc.flag member */
+    KUPL_TASK_DESC_FIELD_DEP       = 1uL << 3,   /**< enable kupl_task_desc.dep_list & ndep member */
 };
 
 typedef void (*kupl_task_func_t)(void *args);
+
+typedef enum kupl_task_dep_type {
+    KUPL_TASK_DEP_TYPE_IN        = 0x1,  /**< IN for read depend */
+    KUPL_TASK_DEP_TYPE_OUT       = 0x2,  /**< OUT for write depend */
+    KUPL_TASK_DEP_TYPE_INOUT     = 0x3,  /**< INOUT for read and write depend */
+    KUPL_TASK_DEP_TYPE_ALL       = 0x80, /**< depend ALL task before */
+} kupl_task_dep_type_t;
+
+typedef struct kupl_task_dep {
+    const void*             base_addr;      /**< the address of this depend */
+    kupl_task_dep_type_t    type;           /**< the type of this depend */
+} kupl_task_dep_t;
 
 /** @brief the description of kupl task */
 typedef struct kupl_task_desc {
@@ -213,6 +226,8 @@ typedef struct kupl_task_desc {
     void                *args;          /**< the arguments of func */
     const char          *name;          /**< the task name */
     int                 priority;       /**< the task priority, the bigger number will get a higher priority */
+    size_t              ndep;           /**< the number of depend */
+    kupl_task_dep_t*    dep_list;       /**< the list of depend */
     uint32_t            flag;           /**< the task flag, @ref enum kupl_task_flag */
 } kupl_task_desc_t;
 
