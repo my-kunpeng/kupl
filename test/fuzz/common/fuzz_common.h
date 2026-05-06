@@ -38,6 +38,8 @@ static const int FLAG_MAX = 1;
 extern void egroup_example(int test_count);
 extern void parallel_for_static_example(int test_count);
 extern void parallel_for_dynamic_example(int test_count);
+extern void reduce_omp(int test_count);
+extern void reduce_pthread(int test_count);
 extern void task_wait_example(int test_count);
 extern void taskloop_example(int test_count);
 extern void graph_base_example(int test_count);
