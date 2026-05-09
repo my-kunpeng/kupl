@@ -34,6 +34,12 @@ static inline void task_int_loop_no_range(kupl_nd_range_t *nd_range, void *args,
 {
 }
 
+static void task_int_parallel(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    kupl_get_kernel_concurrency();
+    kupl_in_parallel();
+}
+
 void parallel_for_coverage()
 {
     kupl_nd_range_t range4;
@@ -66,6 +72,15 @@ void parallel_for_coverage()
         int tid = omp_get_thread_num();
         if (tid == 0) {
             kupl_parallel_for(&desc4, task_int_loop_no_range, nullptr);
+        }
+        kupl_egroup_barrier(eg8);
+    }
+
+    #pragma omp parallel num_threads(8)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 0) {
+            kupl_parallel_for(&desc4, task_int_parallel, nullptr);
         }
         kupl_egroup_barrier(eg8);
     }

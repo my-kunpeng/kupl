@@ -60,6 +60,13 @@ typedef struct kupl_version {
  */
 kupl_export int kupl_get_version(kupl_version_t *version);
 
+/**
+ * @brief get the wall clock time
+ *
+ * @return the wall clock time in seconds
+ */
+kupl_export double kupl_get_wtime(void);
+
 #define KUPL_MAX_DIM_SIZE 3
 #define KUPL_CONCURRENCY_DEFAULT (-1)
 #define KUPL_BLOCKSIZE_DEFAULT 0
@@ -534,6 +541,13 @@ kupl_export int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf
                                          kupl_reduce_args_t *rd_args);
 
 /**
+ * @brief check if in parallel
+ *
+ * @return true if in parallel, false when not
+ */
+kupl_export bool kupl_in_parallel(void);
+
+/**
  * @brief set the number of threads used by kupl kernel，such as memcpy
  *
  * @param [in] num  the number of threads
@@ -543,7 +557,7 @@ kupl_export void kupl_set_kernel_concurrency(int num);
 /**
  * @brief get the number of threads used by kupl kernel，such as memcpy
  *
- * @return              the number of threads , 0 for use all threads
+ * @return the number of threads used now
  */
 kupl_export int kupl_get_kernel_concurrency(void);
 

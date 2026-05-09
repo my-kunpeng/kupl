@@ -1087,6 +1087,27 @@ TEST(test_ult_pf, kupl_parallel_for_err)
     kupl_egroup_destroy(eg8);
 }
 
+static void task_int_parallel(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    kupl_get_kernel_concurrency();
+    bool in_parallel = kupl_in_parallel();
+    EXPECT_EQ(in_parallel, true);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_in_parallel)
+{
+    bool in_parallel = kupl_in_parallel();
+    EXPECT_EQ(in_parallel, false);
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = nullptr,
+        .egroup = nullptr,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+    kupl_parallel_for(&desc, task_int_parallel, nullptr);
+}
+
 static inline void task_int_loop_no_range(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
 {
     std::atomic<int> *count = (std::atomic<int> *)args;

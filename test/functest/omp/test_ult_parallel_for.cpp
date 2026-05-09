@@ -971,6 +971,41 @@ TEST(test_ult_pf, kupl_parallel_for_master_eid_not_min)
     kupl_egroup_destroy(egroup);
 }
 
+static void task_int_parallel(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    kupl_get_kernel_concurrency();
+    bool in_parallel = kupl_in_parallel();
+    EXPECT_EQ(in_parallel, true);
+}
+
+TEST(test_ult_pf, kupl_parallel_for_in_parallel)
+{
+    bool in_parallel = kupl_in_parallel();
+    EXPECT_EQ(in_parallel, false);
+    int num_executors = 4;
+    int exe[num_executors];
+    for (int i = 0; i < num_executors; i++) {
+        exe[i] = i;
+    }
+    auto egroup = kupl_egroup_create(exe, num_executors);
+    kupl_parallel_for_desc_t desc = {
+        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+        .range = nullptr,
+        .egroup = egroup,
+        .concurrency = 4,
+        .policy = KUPL_LOOP_POLICY_STATIC
+    };
+    #pragma omp parallel num_threads(4)
+    {
+        int tid = omp_get_thread_num();
+        if (tid == 1) {
+            int ret = kupl_parallel_for(&desc, task_int_parallel, nullptr);
+            EXPECT_EQ(ret, KUPL_OK);
+        }
+        kupl_egroup_barrier(egroup);
+    }
+}
+
 TEST(test_ult_pf, kupl_parallel_for_lambda)
 {
     kupl_parallel_for_desc_t desc = {

@@ -14,6 +14,8 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
+#include "kupl.h"
+#include "core/kupl_core.h"
 #include "utils/sys/kupl_compiler.h"
 #include "utils/debug/kupl_log.h"
 
@@ -66,6 +68,14 @@ void kupl_time_fini() {}
 uint64_t kupl_now_ns()
 {
     return kupl_arm_now_ns();
+}
+
+double kupl_get_wtime()
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return 0;
+    }
+    return (double)kupl_arm_now_ns() / S2N_FACTOR;
 }
 
 void kupl_timestamp(char *buffer, size_t buffersize)

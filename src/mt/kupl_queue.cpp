@@ -502,7 +502,7 @@ static uint64_t encode_egroup_key(int eid, int nth)
 
 kupl_egroup_h kupl_queue_acquire_egroup(kupl_queue_h queue)
 {
-    int nth = kupl_get_kernel_concurrency();
+    int nth = kupl_get_kernel_concurrency_inner();
     if (kupl_unlikely(nth <= 0)) {
         kupl_error("nth <= 0");
         return nullptr;

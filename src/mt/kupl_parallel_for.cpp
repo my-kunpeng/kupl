@@ -695,7 +695,7 @@ static kupl_always_inline int kupl_parallel_for_num_threads(kupl_parallel_for_de
         num_threads = kupl_min(num_threads, total_chunks);
     }
     num_threads = kupl_min(num_threads, (int)kupl_egroup_get_cur_size(egroup));
-    num_threads = kupl_min(num_threads, kupl_get_kernel_concurrency());
+    num_threads = kupl_min(num_threads, kupl_get_kernel_concurrency_inner());
     KUPL_PTRACE_END(KUPL_PTRACE_PARALLEL_FOR_NUM_THREADS);
     return num_threads;
 }
@@ -711,7 +711,10 @@ int kupl_parallel_for(kupl_parallel_for_desc_t *desc, kupl_pf_func_t func, void 
     auto egroup = desc->egroup;
     int num_threads = kupl_parallel_for_num_threads(desc, egroup);
     if (kupl_unlikely(call_cnt >= 1 || num_threads == 1 || kupl_is_expand_executor())) {
+        auto ult = kupl_executor_get_pf_ult();
+        ult->tb.egroup = egroup;
         func(desc->range, args, 0, 1);
+        ult->tb.egroup = nullptr;
         return KUPL_OK;
     }
     static thread_local int geid = kupl_get_executor_num();
@@ -879,6 +882,29 @@ int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func
     }
     pf.post_func = nullptr;
     return KUPL_OK;
+}
+
+bool kupl_in_parallel()
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return false;
+    }
+    return call_cnt != 0;
+}
+
+int kupl_get_kernel_concurrency()
+{
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return 1;
+    }
+    if (call_cnt == 1) {
+        static thread_local int geid = kupl_get_executor_num();
+        int master_eid = g_pf[geid].master_eid;
+        auto &pf = g_pf[master_eid];
+        return pf.num_threads;
+    } else {
+        return 1;
+    }
 }
 
 static int kupl_global_egroup_create(int num_threads)
