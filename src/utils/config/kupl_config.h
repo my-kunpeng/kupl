@@ -16,14 +16,14 @@
 #include <sched.h>
 #include "utils/sys/kupl_glibc_version.h"
 
-#define KUPL_CONFIG_TO_ENUM(_env, _type)  _env ## _ ## _type ## _ENUM
+#define KUPL_CONFIG_TO_ENUM(_env, _type) _env##_##_type##_ENUM
 
 /** define the enum of int/str type enum configure */
 #define KUPL_CONFIG_INT(_env, ...) KUPL_CONFIG_TO_ENUM(_env, INT),
 #define KUPL_CONFIG_STR(_env, ...) KUPL_CONFIG_TO_ENUM(_env, STR),
 enum kupl_config_enum {
     KUPL_CONFIG_ENUM_FIRST = -1,
-    #include "kupl_config_var.inc"
+#include "kupl_config_var.inc"
     KUPL_CONFIG_ENUM_LAST
 };
 #undef KUPL_CONFIG_INT
@@ -37,8 +37,8 @@ const char *kupl_config_str_type_value(kupl_config_enum env);
  *
  * @param _env      the name of this configure in environment
  */
-#define kupl_config_get_value(_env)        kupl_config_int_type_value(KUPL_CONFIG_TO_ENUM(_env, INT))
-#define kupl_config_get_value_str(_env)    kupl_config_str_type_value(KUPL_CONFIG_TO_ENUM(_env, STR))
+#define kupl_config_get_value(_env) kupl_config_int_type_value(KUPL_CONFIG_TO_ENUM(_env, INT))
+#define kupl_config_get_value_str(_env) kupl_config_str_type_value(KUPL_CONFIG_TO_ENUM(_env, STR))
 
 /**
  * @brief load all default config or read config from environment

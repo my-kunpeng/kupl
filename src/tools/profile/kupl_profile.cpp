@@ -23,7 +23,7 @@
 
 #ifdef ENABLE_KUPL_PROFILE
 
-#define PROFILE_ID_INIT     (-1)
+#define PROFILE_ID_INIT (-1)
 struct profile_data {
     const char *msg = nullptr;
     int id = PROFILE_ID_INIT;
@@ -99,7 +99,7 @@ struct stats_data_value {
 
 static profile_data g_data[MAX_THREAD_NUM][MAX_PROFILE_ID];
 static int g_profile_id_seq = 0;
-static const char* g_profile_id_name[MAX_PROFILE_ID];
+static const char *g_profile_id_name[MAX_PROFILE_ID];
 static std::unordered_map<uint64_t, stats_data_value> g_profile_stats[MAX_THREAD_NUM];
 static int kupl_prof_level_profile;
 
@@ -124,7 +124,7 @@ int profile_register_id(const char *name)
 {
     auto id = g_profile_id_seq++;
     kupl_assertv(id >= MAX_PROFILE_ID, "The profile id %d is too big, please change macro MAX_PROFILE_ID which is %d",
-        id, MAX_PROFILE_ID);
+                 id, MAX_PROFILE_ID);
     if (id >= MAX_PROFILE_ID) {
         return PROFILE_ID_INIT;
     }
@@ -214,19 +214,17 @@ void profile_summary(int max_tid, int max_id)
     printf("============== start profile =============\n");
     printf("%10s %7s %30s %18s %12s "
            "%15s %15s %15s\n",
-           "thread_id", "msg_id", "msg", "sum(ms)", "count",
-           "avg(ns)", "max(ns)", "min(ns)");
+           "thread_id", "msg_id", "msg", "sum(ms)", "count", "avg(ns)", "max(ns)", "min(ns)");
     for (int t = 0; t < max_tid; ++t) {
         for (int id = 0; id < max_id; ++id) {
             auto data = &g_data[t][id];
             if (data->msg == nullptr) {
                 continue;
             }
-            printf("%10d %7d %30s %18.6lf %12lu "   // thread id msg sum count
+            printf("%10d %7d %30s %18.6lf %12lu " // thread id msg sum count
                    "%15lu %15lu %15lu\n",         // avg max min
-                   t, id, data->msg, (double)(data->sum/NS2MS_FACTOR), data->count,
-                   data->sum / kupl_max(1, data->count), data->max, kupl_min(data->min, data->min + 1)
-                   );
+                   t, id, data->msg, (double)(data->sum / NS2MS_FACTOR), data->count,
+                   data->sum / kupl_max(1, data->count), data->max, kupl_min(data->min, data->min + 1));
         }
     }
 

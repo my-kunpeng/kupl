@@ -34,7 +34,7 @@ int kupl_memcpy_init(void);
 
 void kupl_memcpy_fini(void);
 
-void* kupl_get_sdma_chn(void);
+void *kupl_get_sdma_chn(void);
 
 int kupl_sdma_wait_req(kupl_queue_h queue, sdma_request_t *request);
 /**

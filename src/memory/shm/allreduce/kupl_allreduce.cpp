@@ -11,8 +11,8 @@
  */
 #include "kupl_allreduce.h"
 
-static kupl_always_inline
-int kupl_shm_send(void *buf, void *destbuf, size_t offset, unsigned int count, unsigned int type_size)
+static kupl_always_inline int kupl_shm_send(void *buf, void *destbuf, size_t offset, unsigned int count,
+                                            unsigned int type_size)
 {
     if (count == 0) {
         return KUPL_OK;
@@ -29,8 +29,8 @@ int kupl_shm_send(void *buf, void *destbuf, size_t offset, unsigned int count, u
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_recv(void *buf, void *source_buf, size_t offset, unsigned int count, unsigned int type_size)
+static kupl_always_inline int kupl_shm_recv(void *buf, void *source_buf, size_t offset, unsigned int count,
+                                            unsigned int type_size)
 {
     if (count == 0) {
         return KUPL_OK;
@@ -185,8 +185,8 @@ static kupl_always_inline int do_pre_reduce_with_partial_process(const kupl_shm_
         unsigned int curr_end = 0;
         calc_offset(rank, count, 0, &curr_start, &curr_end);
         kupl_shm_peer_fence(send_win, dest);
-        dispatch_by_datatype(datatype, dest_recvbuf, const_cast<char *>(sendbuf), dest_sendbuf,
-                             curr_start, curr_end - curr_start + 1);
+        dispatch_by_datatype(datatype, dest_recvbuf, const_cast<char *>(sendbuf), dest_sendbuf, curr_start,
+                             curr_end - curr_start + 1);
     } else {
         // recv left half from dest
         int dest = rank + 1;
@@ -201,8 +201,8 @@ static kupl_always_inline int do_pre_reduce_with_partial_process(const kupl_shm_
         unsigned int curr_end = 0;
         calc_offset(rank, count, 0, &curr_start, &curr_end);
         kupl_shm_peer_fence(send_win, dest);
-        dispatch_by_datatype(datatype, recvbuf, const_cast<char *>(sendbuf), destbuf,
-                             curr_start, curr_end - curr_start + 1);
+        dispatch_by_datatype(datatype, recvbuf, const_cast<char *>(sendbuf), destbuf, curr_start,
+                             curr_end - curr_start + 1);
     }
     return ret;
 }

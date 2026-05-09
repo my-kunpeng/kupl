@@ -42,13 +42,13 @@ typedef struct kupl_lock {
     volatile void *vol_raw_lock;
     kupl_lock_func_lock_t lock;
     kupl_lock_func_unlock_t unlock;
-    kupl_lock_func_trylock_t trylock;   /* retrun 1 for get lock */
+    kupl_lock_func_trylock_t trylock; /* retrun 1 for get lock */
 } kupl_lock_t;
 
 /**
  * @brief Create a kupl_lock_t type is @b type
  */
-kupl_lock_t* kupl_lock_create(kupl_lock_type type);
+kupl_lock_t *kupl_lock_create(kupl_lock_type type);
 
 /**
  * @brief Cleanup a kupl_lock_t
@@ -56,24 +56,20 @@ kupl_lock_t* kupl_lock_create(kupl_lock_type type);
 void kupl_lock_cleanup(kupl_lock_t *lock);
 
 /* spinlock pause wait */
-static kupl_always_inline
-void kupl_spin_wait()
+static kupl_always_inline void kupl_spin_wait()
 {
 #ifdef KUPL_ARM_ARCH
-    __asm__ __volatile__ ("yield");
+    __asm__ __volatile__("yield");
 #else
-    #pragma message ("No 'pause' instruction/intrisic found for this architecture ")
+#pragma message("No 'pause' instruction/intrisic found for this architecture ")
 #endif
 }
 
 /* spinlock pause wait release */
-static kupl_always_inline
-void kupl_spin_wait_release()
-{
-}
+static kupl_always_inline void kupl_spin_wait_release() {}
 
 typedef struct kupl_lock_guard_data {
-    bool lock __attribute__((aligned (8)));
+    bool lock __attribute__((aligned(8)));
     int count;
     int status;
 } kupl_lock_guard_data_t;
@@ -81,10 +77,10 @@ typedef struct kupl_lock_guard_data {
 struct kupl_lock_guard_t {
     KUPL_ATOMIC_FLAG *lock;
 
-    kupl_lock_guard_t(const kupl_lock_guard_t&) = delete;
-    kupl_lock_guard_t& operator=(const kupl_lock_guard_t&) = delete;
+    kupl_lock_guard_t(const kupl_lock_guard_t &) = delete;
+    kupl_lock_guard_t &operator=(const kupl_lock_guard_t &) = delete;
 
-    explicit kupl_lock_guard_t(bool *flag) : lock((KUPL_ATOMIC_FLAG*)flag)
+    explicit kupl_lock_guard_t(bool *flag) : lock((KUPL_ATOMIC_FLAG *)flag)
     {
         while (lock->test_and_set(std::memory_order_acquire)) {
             /* busy wait */
@@ -98,34 +94,34 @@ struct kupl_lock_guard_t {
 };
 
 /* if _ret == 1, the invoker func should return _guard_data.status */
-#define kupl_init_lock_guard(_guard_data)           \
-({                                                  \
-    int _ret = 0;                                   \
-    kupl_lock_guard_t guard(&(_guard_data).lock);   \
-    if ((_guard_data).count++ > 0) {                \
-        _ret = 1;                                   \
-    }                                               \
-    _ret;                                           \
-})
+#define kupl_init_lock_guard(_guard_data)             \
+    ({                                                \
+        int _ret = 0;                                 \
+        kupl_lock_guard_t guard(&(_guard_data).lock); \
+        if ((_guard_data).count++ > 0) {              \
+            _ret = 1;                                 \
+        }                                             \
+        _ret;                                         \
+    })
 
 /* if _ret == 1, the invoker func should return */
-#define kupl_fini_lock_guard(_guard_data)           \
-({                                                  \
-    int _ret = 0;                                   \
-    kupl_lock_guard_t guard(&(_guard_data).lock);   \
-    if (--(_guard_data).count != 0) {               \
-        _ret = 1;                                   \
-    }                                               \
-    _ret;                                           \
-})
+#define kupl_fini_lock_guard(_guard_data)             \
+    ({                                                \
+        int _ret = 0;                                 \
+        kupl_lock_guard_t guard(&(_guard_data).lock); \
+        if (--(_guard_data).count != 0) {             \
+            _ret = 1;                                 \
+        }                                             \
+        _ret;                                         \
+    })
 
-#define kupl_guard_data_set_status(_guard_data, _status)    \
-do {                                                        \
-    (_guard_data).status = _status;                         \
-    if ((_status) != KUPL_OK) {                             \
-        (_guard_data).count--;                              \
-    }                                                       \
-} while (0)
+#define kupl_guard_data_set_status(_guard_data, _status) \
+    do {                                                 \
+        (_guard_data).status = _status;                  \
+        if ((_status) != KUPL_OK) {                      \
+            (_guard_data).count--;                       \
+        }                                                \
+    } while (0)
 
 #ifdef __cplusplus
 }

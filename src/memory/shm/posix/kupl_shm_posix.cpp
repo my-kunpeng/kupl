@@ -23,14 +23,12 @@
 #include "utils/sys/kupl_math.h"
 #include "utils/sys/kupl_glibc_version.h"
 
-static kupl_always_inline
-kupl_shm_info_posix_args *kupl_shm_posix_get_info(kupl_shm_base_info *info, int idx)
+static kupl_always_inline kupl_shm_info_posix_args *kupl_shm_posix_get_info(kupl_shm_base_info *info, int idx)
 {
     return &(reinterpret_cast<kupl_shm_info_posix_args *>(info))[idx];
 }
 
-static kupl_always_inline
-int kupl_shm_posix_oob_allgather(kupl_shm_win_h win)
+static kupl_always_inline int kupl_shm_posix_oob_allgather(kupl_shm_win_h win)
 {
     char *mmap_filename_array;
     int myid = win->rank;
@@ -41,8 +39,8 @@ int kupl_shm_posix_oob_allgather(kupl_shm_win_h win)
         return kupl_log_error_return(ERROR, "kupl_malloc failed, errno = %s", strerror(errno));
     }
     kupl_shm_oob_allgather_cb_t oob_allgather = win->comm->oob_allgather;
-    oob_allgather(kupl_shm_posix_get_info(win->info, myid)->mmap_filename, mmap_filename_array,
-                  KUPL_SHM_MMAP_PATH_MAX, win->comm->group, KUPL_SHM_DATATYPE_CHAR);
+    oob_allgather(kupl_shm_posix_get_info(win->info, myid)->mmap_filename, mmap_filename_array, KUPL_SHM_MMAP_PATH_MAX,
+                  win->comm->group, KUPL_SHM_DATATYPE_CHAR);
     if (shm_info.is_contig) {
         for (int i = 1; i < numprocs; i++) {
             char *filename = mmap_filename_array + i * KUPL_SHM_MMAP_PATH_MAX;
@@ -60,8 +58,7 @@ static uint64_t kupl_shm_rand()
     return (uint64_t)rand_r(&seed);
 }
 
-static kupl_always_inline
-void display_shm_open_error_and_solution(int errnum)
+static kupl_always_inline void display_shm_open_error_and_solution(int errnum)
 {
     switch (errnum) {
         case EACCES:
@@ -82,13 +79,12 @@ void display_shm_open_error_and_solution(int errnum)
     }
 }
 
-static kupl_always_inline
-void display_mmap_error_and_solution(int errnum)
+static kupl_always_inline void display_mmap_error_and_solution(int errnum)
 {
     switch (errnum) {
         case ENOMEM:
             kupl_error("The number of mmaps has reached the upper limit of the system configuration. Please check the "
-                   "system file /proc/sys/vm/max_map_count\n");
+                       "system file /proc/sys/vm/max_map_count\n");
             break;
         default:
             kupl_error("Error Reason: shm mmap failed: (%d: %s).\n", errnum, strerror(errnum));
@@ -96,8 +92,7 @@ void display_mmap_error_and_solution(int errnum)
     }
 }
 
-static kupl_always_inline
-int kupl_shm_posix_alloc(size_t size, kupl_shm_win_h win)
+static kupl_always_inline int kupl_shm_posix_alloc(size_t size, kupl_shm_win_h win)
 {
     int ret = KUPL_ERROR;
     int pid = win->comm->pid;
@@ -142,20 +137,19 @@ out:
     return ret;
 }
 
-static kupl_always_inline
-int kupl_shm_posix_attach(kupl_shm_win_h win, size_t *offset_list)
+static kupl_always_inline int kupl_shm_posix_attach(kupl_shm_win_h win, size_t *offset_list)
 {
     int ret = KUPL_ERROR;
     int myid = win->rank;
     int numprocs = win->size;
     char *mmap_filename_array = kupl_shm_posix_get_info(win->info, myid)->mmap_filename_array;
-    kupl_vla<size_t>seg_size((size_t)numprocs);
+    kupl_vla<size_t> seg_size((size_t)numprocs);
     if (kupl_unlikely(seg_size.get_data() == nullptr)) {
         return ret;
     }
     kupl_shm_oob_allgather_cb_t oob_allgather = win->comm->oob_allgather;
-    oob_allgather(&(kupl_shm_posix_get_info(win->info, myid)->mmap_size), seg_size.get_data(),
-        sizeof(size_t), win->comm->group, KUPL_SHM_DATATYPE_CHAR);
+    oob_allgather(&(kupl_shm_posix_get_info(win->info, myid)->mmap_size), seg_size.get_data(), sizeof(size_t),
+                  win->comm->group, KUPL_SHM_DATATYPE_CHAR);
     int err_idx;
     for (int i = 0; i < numprocs; i++) {
         if (((!shm_info.is_contig) && (i == myid)) || ((shm_info.is_contig) && (myid == 0) && (i == myid)) ||
@@ -195,8 +189,7 @@ err:
     return ret;
 }
 
-static kupl_always_inline
-int kupl_shm_posix_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_posix_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_insert_after(&comm->win_list, &win->list);
@@ -204,8 +197,7 @@ int kupl_shm_posix_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_posix_win_del(kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_posix_win_del(kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_del(&win->list);
@@ -230,12 +222,8 @@ void kupl_shm_get_aligned_size(size_t *size)
     }
 }
 
-int kupl_shm_posix_win_alloc(size_t size,
-    kupl_shm_comm_h comm,
-    void **baseptr,
-    kupl_shm_win_h *win,
-    int flag,
-    size_t *offset_list)
+int kupl_shm_posix_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag,
+                             size_t *offset_list)
 {
     int ret = KUPL_ERROR;
     kupl_shm_win_h win_temp;
@@ -277,9 +265,9 @@ int kupl_shm_posix_win_alloc(size_t size,
         goto err_mummap_other;
     }
     *baseptr = ((char *)kupl_shm_posix_get_info((win_temp)->info, myid)->super.attach_address) +
-        kupl_shm_posix_get_info((win_temp)->info, myid)->offset;
+               kupl_shm_posix_get_info((win_temp)->info, myid)->offset;
     win_temp->base_ptr = ((char *)kupl_shm_posix_get_info((win_temp)->info, myid)->super.attach_address) +
-        kupl_shm_posix_get_info((win_temp)->info, myid)->offset;
+                         kupl_shm_posix_get_info((win_temp)->info, myid)->offset;
     *win = win_temp;
     return KUPL_OK;
 err_mummap_other:
@@ -312,7 +300,7 @@ err:
 int kupl_shm_posix_win_query(kupl_shm_win_h win, int remote_rank, void **baseptr)
 {
     *baseptr = ((char *)kupl_shm_posix_get_info(win->info, remote_rank)->super.attach_address) +
-        kupl_shm_posix_get_info(win->info, remote_rank)->offset;
+               kupl_shm_posix_get_info(win->info, remote_rank)->offset;
     return KUPL_OK;
 }
 
@@ -329,8 +317,7 @@ int kupl_shm_posix_win_free(kupl_shm_win_h win, int flag)
             kupl_error("munmap failed, errno = %s", strerror(errno));
         }
     }
-    if ((kupl_shm_posix_get_info(win->info, myid)->mmap_size) &&
-        ((!shm_info.is_contig) || (myid == 0))) {
+    if ((kupl_shm_posix_get_info(win->info, myid)->mmap_size) && ((!shm_info.is_contig) || (myid == 0))) {
         if (shm_unlink(kupl_shm_posix_get_info(win->info, myid)->mmap_filename) == -1) {
             kupl_error("shm_unlink failed, errno = %s", strerror(errno));
         }
@@ -344,13 +331,11 @@ int kupl_shm_posix_win_free(kupl_shm_win_h win, int flag)
     return KUPL_OK;
 }
 
-static const kupl_shm_ops_t g_kupl_shm_posix_ops = {
-    .init               = kupl_shm_posix_init,
-    .finalize           = kupl_shm_posix_finalize,
-    .shm_win_alloc      = kupl_shm_posix_win_alloc,
-    .shm_win_free       = kupl_shm_posix_win_free,
-    .shm_win_query      = kupl_shm_posix_win_query
-};
+static const kupl_shm_ops_t g_kupl_shm_posix_ops = {.init = kupl_shm_posix_init,
+                                                    .finalize = kupl_shm_posix_finalize,
+                                                    .shm_win_alloc = kupl_shm_posix_win_alloc,
+                                                    .shm_win_free = kupl_shm_posix_win_free,
+                                                    .shm_win_query = kupl_shm_posix_win_query};
 
 void kupl_shm_posix_reg_ops()
 {

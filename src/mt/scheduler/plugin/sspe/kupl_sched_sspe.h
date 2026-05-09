@@ -18,10 +18,10 @@
 extern "C" {
 #endif
 
-#define KUPL_SCHED_PLUGIN_SSPE_NAME       "sspe"
-#define KUPL_SCHED_PLUGIN_SSPE_SCORE      (-1)
+#define KUPL_SCHED_PLUGIN_SSPE_NAME "sspe"
+#define KUPL_SCHED_PLUGIN_SSPE_SCORE (-1)
 
-const kupl_sched_plugin_api_t* kupl_sched_sspe_get_instance();
+const kupl_sched_plugin_api_t *kupl_sched_sspe_get_instance();
 
 #ifdef __cplusplus
 }

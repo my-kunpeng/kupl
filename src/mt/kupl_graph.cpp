@@ -29,7 +29,7 @@ kupl_graph_h kupl_graph_create(kupl_egroup_h egroup)
         return nullptr;
     }
 
-    kupl_sched_t* sched;
+    kupl_sched_t *sched;
     if (kupl_is_expand_executor()) {
         sched = kupl_get_global_sched_expand();
     } else {
@@ -109,17 +109,18 @@ int kupl_graph_add_task(kupl_graph_h graph, kupl_task_desc_t *task_desc)
     if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
         return kupl_log_error_return(ERROR, "invoke KUPL functions on threads not managed by KUPL");
     }
-    kupl_tb_desc_t *user_desc = (kupl_tb_desc_t*)task_desc;
+    kupl_tb_desc_t *user_desc = (kupl_tb_desc_t *)task_desc;
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = user_desc,
-            .graph      = graph,
-            .count      = &graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = nullptr,
-        .udata_size     = 0,
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = user_desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = 0,
     };
     kupl_task_t *task = kupl_task_init(&task_param, geid);
     if (kupl_unlikely(task == nullptr)) {
@@ -159,15 +160,16 @@ int kupl_graph_add_sgraph_task(kupl_graph_h graph, kupl_sgraph_task_desc_t *task
         .flag = task_desc->flag,
     };
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = &user_desc,
-            .graph      = graph,
-            .count      = &graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = nullptr,
-        .udata_size     = 0,
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = 0,
     };
     kupl_task_t *task = kupl_task_init(&task_param, geid);
     if (kupl_unlikely(task == nullptr)) {
@@ -188,9 +190,9 @@ typedef struct kupl_taskloop_info {
 } kupl_taskloop_info_t;
 
 typedef struct kupl_taskloop_args {
-    kupl_nd_range_t             range;
-    kupl_taskloop_func_t        func;
-    void                        *args;
+    kupl_nd_range_t range;
+    kupl_taskloop_func_t func;
+    void *args;
 } kupl_taskloop_args_t;
 
 void kupl_taskloop_func(void *args)
@@ -199,11 +201,10 @@ void kupl_taskloop_func(void *args)
     loop_args->func(&loop_args->range, loop_args->args);
 }
 
-static kupl_always_inline
-int kupl_taskloop_check(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
+static kupl_always_inline int kupl_taskloop_check(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
 {
-    if (kupl_unlikely(graph == nullptr || desc == nullptr || desc->field_mask != KUPL_TASKLOOP_DESC_FIELD_DEFAULT
-                      || desc->func == nullptr || desc->egroup == nullptr || desc->range == nullptr)) {
+    if (kupl_unlikely(graph == nullptr || desc == nullptr || desc->field_mask != KUPL_TASKLOOP_DESC_FIELD_DEFAULT ||
+                      desc->func == nullptr || desc->egroup == nullptr || desc->range == nullptr)) {
         return KUPL_ERROR;
     }
     if (kupl_unlikely(kupl_egroup_get_cur_size(desc->egroup) == 0)) {
@@ -212,8 +213,8 @@ int kupl_taskloop_check(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
     return kupl_check_range(desc->range, KUPL_LOOP_POLICY_TASK);
 }
 
-static kupl_always_inline
-int kupl_taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info)
+static kupl_always_inline int kupl_taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
+                                                   kupl_taskloop_info_t *info)
 {
     int geid = kupl_get_executor_num();
     if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
@@ -221,21 +222,22 @@ int kupl_taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_ta
     }
     kupl_range_t *nd_range = desc->range->nd_range;
     kupl_tb_desc_t user_desc = {
-        .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-        .func           = kupl_taskloop_func,
-        .args           = nullptr,
-        .executor_id    = 0,
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = kupl_taskloop_func,
+        .args = nullptr,
+        .executor_id = 0,
     };
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = &user_desc,
-            .graph      = graph,
-            .count      = &graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = nullptr,
-        .udata_size     = sizeof(kupl_taskloop_args_t),
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_args_t),
     };
     // 5 tasks assigned to 3 threads
     // min_tasks: 1, max_tasks: 2, extra_tasks: 2
@@ -292,13 +294,12 @@ int kupl_taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_ta
 }
 
 typedef struct kupl_taskloop_dispatch_args {
-    uint32_t                eid;
-    uint32_t                eidx;
-    kupl_graph_h            graph;
-    kupl_taskloop_desc_t    *desc;
-    kupl_taskloop_info_t    info;
+    uint32_t eid;
+    uint32_t eidx;
+    kupl_graph_h graph;
+    kupl_taskloop_desc_t *desc;
+    kupl_taskloop_info_t info;
 } kupl_taskloop_dispatch_args_t;
-
 
 static void kupl_taskloop_dispatch(void *dispatch_args)
 {
@@ -310,28 +311,29 @@ static void kupl_taskloop_dispatch(void *dispatch_args)
     int64_t tasks_begin;
     int64_t tasks_end;
     if (info.extra_tasks != 0 && args->eidx >= info.extra_tasks) {
-        tasks_begin = args->eidx * info.min_tasks +  info.extra_tasks;
+        tasks_begin = args->eidx * info.min_tasks + info.extra_tasks;
         tasks_end = tasks_begin + info.min_tasks;
     } else {
         tasks_begin = args->eidx * info.max_tasks;
         tasks_end = tasks_begin + info.max_tasks;
     }
     kupl_tb_desc_t user_desc = {
-        .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-        .func           = kupl_taskloop_func,
-        .args           = nullptr,
-        .executor_id    = (int)args->eid,
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = kupl_taskloop_func,
+        .args = nullptr,
+        .executor_id = (int)args->eid,
     };
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = &user_desc,
-            .graph      = args->graph,
-            .count      = &args->graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = nullptr,
-        .udata_size     = sizeof(kupl_taskloop_args_t),
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = args->graph,
+                .count = &args->graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_args_t),
     };
     for (int64_t task_id = tasks_begin; task_id < tasks_end; task_id++) {
         kupl_task_h task_inner = kupl_task_init(&task_param, geid);
@@ -369,8 +371,8 @@ static void kupl_taskloop_dispatch(void *dispatch_args)
  * @brief The taskloop is split into num_executors dispatch tasks, which are responsible for
           concurrently dispatching tasks to the intended threads.
  */
-static kupl_always_inline
-int kupl_taskloop_concurrent(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info)
+static kupl_always_inline int kupl_taskloop_concurrent(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
+                                                       kupl_taskloop_info_t *info)
 {
     int geid = kupl_get_executor_num();
     if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
@@ -378,21 +380,22 @@ int kupl_taskloop_concurrent(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kup
         return KUPL_ERROR;
     }
     kupl_tb_desc_t user_desc = {
-        .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-        .func           = kupl_taskloop_dispatch,
-        .args           = nullptr,
-        .executor_id    = 0,
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = kupl_taskloop_dispatch,
+        .args = nullptr,
+        .executor_id = 0,
     };
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = &user_desc,
-            .graph      = graph,
-            .count      = &graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = nullptr,
-        .udata_size     = sizeof(kupl_taskloop_dispatch_args_t),
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_dispatch_args_t),
     };
     KUPL_FOR_EACH_EGROUP_REV(desc->egroup, eid, eidx, {
         user_desc.executor_id = (int)eid;
@@ -432,7 +435,7 @@ int kupl_graph_add_taskloop(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
     }
     info.min_tasks = info.total_tasks / info.esize;
     info.extra_tasks = info.total_tasks % info.esize;
-    info.max_tasks =  info.min_tasks + (info.extra_tasks > 0);
+    info.max_tasks = info.min_tasks + (info.extra_tasks > 0);
 
     if (info.esize * taskloop_threshold > info.total_tasks) {
         return kupl_taskloop_linear(graph, desc, &info);
@@ -518,230 +521,150 @@ void kupl_global_graph_destroy(void)
 
 namespace kupl {
 
-    int graph_submit(kupl_graph_h graph, kupl_task_desc_t *desc,
-                     const std::function<void(void)> &func)
-    {
-        // check params
-        if (kupl_unlikely(graph == nullptr || desc == nullptr ||func == nullptr)) {
-            return kupl_log_error_return(ERROR, "graph add task params invalid");
-        }
-        int geid = kupl_get_executor_num();
-        if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
-            return kupl_log_error_return(ERROR, "invoke KUPL functions on threads not managed by KUPL");
-        }
-        kupl_task_h task = (kupl_task_h)kupl_memory_alloc(sizeof(kupl_task_t) + sizeof(lambda_func_data), geid);
-        if (kupl_unlikely(task == nullptr)) {
-            kupl_warn("task init failed");
-            return KUPL_ERROR;
-        }
-        task->tb.ref = 1;
-        KUPL_ATOMIC_ST(&task->tb.state, KUPL_TB_STATE_INIT);
+int graph_submit(kupl_graph_h graph, kupl_task_desc_t *desc, const std::function<void(void)> &func)
+{
+    // check params
+    if (kupl_unlikely(graph == nullptr || desc == nullptr || func == nullptr)) {
+        return kupl_log_error_return(ERROR, "graph add task params invalid");
+    }
+    int geid = kupl_get_executor_num();
+    if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
+        return kupl_log_error_return(ERROR, "invoke KUPL functions on threads not managed by KUPL");
+    }
+    kupl_task_h task = (kupl_task_h)kupl_memory_alloc(sizeof(kupl_task_t) + sizeof(lambda_func_data), geid);
+    if (kupl_unlikely(task == nullptr)) {
+        kupl_warn("task init failed");
+        return KUPL_ERROR;
+    }
+    task->tb.ref = 1;
+    KUPL_ATOMIC_ST(&task->tb.state, KUPL_TB_STATE_INIT);
 
-        lambda_func_data *data = reinterpret_cast<lambda_func_data *>(task->udata);
-        memset((void*)data, 0, sizeof(lambda_func_data));
-        data->func = func;
-        desc->func = lambda_func;
-        desc->args = data;
-        kupl_task_param_t task_param = {
-            .super = {
-                .type       = KUPL_TB_TYPE_TASK,
-                .user_desc  = (kupl_tb_desc_t*)desc,
-                .graph      = graph,
-                .count      = &graph->count,
+    lambda_func_data *data = reinterpret_cast<lambda_func_data *>(task->udata);
+    memset((void *)data, 0, sizeof(lambda_func_data));
+    data->func = func;
+    desc->func = lambda_func;
+    desc->args = data;
+    kupl_task_param_t task_param = {
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = (kupl_tb_desc_t *)desc,
+                .graph = graph,
+                .count = &graph->count,
             },
-            .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-            .inplace        = task,
-            .udata_size     = sizeof(lambda_func_data),
-        };
-        kupl_tb_init(&task->tb, &task_param.super, geid);
-        task->kind = task_param.kind;
-        task->tb.ops = &task_ops;
-        if (KUPL_ERROR == kupl_gnode_init(task->gnode)) {
-            kupl_task_cleanup(task);
-            return KUPL_ERROR;
-        }
-        if (desc->field_mask & KUPL_TASK_DESC_FIELD_DEP) {
-            if (kupl_unlikely(desc->ndep != 0 && desc->dep_list == nullptr)) {
-                return kupl_log_error_return(ERROR, "dep_list is nullptr");
-            }
-            int ret = kupl_dag_add_task(graph->dag, task, desc->dep_list, (uint32_t)desc->ndep, geid);
-            if (ret == KUPL_ERROR) {
-                return KUPL_ERROR;
-            } else if (ret == KUPL_DAG_TASK_NOT_READY) {
-                return KUPL_OK;
-            }
-        }
-        kupl_sched_add_tb(graph->sched, &task->tb);
-        return KUPL_OK;
-    }
-
-    static int taskloop_check(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
-    {
-        if (kupl_unlikely(graph == nullptr || desc == nullptr || desc->field_mask != KUPL_TASKLOOP_DESC_FIELD_DEFAULT
-                        || desc->egroup == nullptr || desc->range == nullptr)) {
-            return KUPL_ERROR;
-        }
-        if (kupl_unlikely(kupl_egroup_get_cur_size(desc->egroup) == 0)) {
-            return KUPL_ERROR;
-        }
-        return kupl_check_range(desc->range, KUPL_LOOP_POLICY_TASK);
-    }
-
-    using taskloop_lambda = std::function<void(const kupl_nd_range_t *)>;
-
-    struct kupl_taskloop_lambda_args {
-        kupl_nd_range_t             range;
-        taskloop_lambda             lambda_func;
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = task,
+        .udata_size = sizeof(lambda_func_data),
     };
-    using kupl_taskloop_lambda_args_t = struct kupl_taskloop_lambda_args;
-
-    void kupl_taskloop_lambda_func(void *args)
-    {
-        auto loop_args = (kupl_taskloop_lambda_args *)args;
-        loop_args->lambda_func(&loop_args->range);
+    kupl_tb_init(&task->tb, &task_param.super, geid);
+    task->kind = task_param.kind;
+    task->tb.ops = &task_ops;
+    if (KUPL_ERROR == kupl_gnode_init(task->gnode)) {
+        kupl_task_cleanup(task);
+        return KUPL_ERROR;
     }
-
-    static int taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info,
-                               taskloop_lambda func)
-    {
-        int geid = kupl_get_executor_num();
-        if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
-            return kupl_log_error_return(ERROR, "invoke KUPL functions on threads not managed by KUPL");
+    if (desc->field_mask & KUPL_TASK_DESC_FIELD_DEP) {
+        if (kupl_unlikely(desc->ndep != 0 && desc->dep_list == nullptr)) {
+            return kupl_log_error_return(ERROR, "dep_list is nullptr");
         }
-        kupl_range_t *nd_range = desc->range->nd_range;
-        kupl_tb_desc_t user_desc = {
-            .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-            .func           = kupl_taskloop_lambda_func,
-            .args           = nullptr,
-            .executor_id    = 0,
-        };
-        kupl_task_param_t task_param = {
-            .super = {
-                .type       = KUPL_TB_TYPE_TASK,
-                .user_desc  = &user_desc,
-                .graph      = graph,
-                .count      = &graph->count,
-            },
-            .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-            .inplace        = nullptr,
-            .udata_size     = sizeof(kupl_taskloop_lambda_args_t),
-        };
-        // 5 tasks assigned to 3 threads
-        // min_tasks: 1, max_tasks: 2, extra_tasks: 2
-        //             t0 t1 t2
-        //           +-0  1  3 - min_tasks
-        // max_tasks-+
-        //           +-X  2  4
-        //                +--+
-        //              extra_tasks
-
-        for (int64_t i = 0; i < info->max_tasks; i++) {
-            int64_t task_id = i;
-            KUPL_FOR_EACH_EGROUP(desc->egroup, eid, eidx, {
-                if (i == info->min_tasks && ((eidx + info->extra_tasks) < info->esize)) {
-                    task_id += info->min_tasks;
-                    eidx++; // continue will escape eidx++, so do it here.
-                    continue;
-                }
-                user_desc.executor_id = (int)eid;
-                kupl_task_h task_inner = kupl_task_init(&task_param, geid);
-                if (kupl_unlikely(task_inner == nullptr)) {
-                    return kupl_log_error_return(ERROR, "taskloop inner task create failed");
-                }
-                task_inner->tb.args = task_inner->udata;
-                kupl_taskloop_lambda_args_t *taskloop_args =
-                reinterpret_cast<kupl_taskloop_lambda_args_t *>(task_inner->udata);
-                memset((void*)taskloop_args, 0, sizeof(kupl_taskloop_lambda_args_t));
-                taskloop_args->lambda_func = func;
-                kupl_range_t *nd_range_args = taskloop_args->range.nd_range;
-                taskloop_args->range.dim = info->dim;
-
-                int64_t task_id_tmp = task_id;
-                int64_t block_idx = 0;
-                for (int d = 0; d < info->dim; d++) {
-                    block_idx = task_id_tmp % info->blocks[d];
-                    task_id_tmp /= info->blocks[d];
-                    kupl_range_t &range = nd_range_args[d];
-
-                    range.lower = nd_range[d].lower + block_idx * nd_range[d].blocksize;
-                    if (nd_range[d].blocksize > 0) {
-                        range.upper = kupl_min(nd_range[d].upper, range.lower + nd_range[d].blocksize);
-                    } else {
-                        range.upper = kupl_max(nd_range[d].upper, range.lower + nd_range[d].blocksize);
-                    }
-                    range.step = nd_range[d].step;
-                    range.blocksize = nd_range[d].blocksize;
-                }
-                kupl_sched_add_tb(graph->sched, &task_inner->tb);
-
-                // update task_id
-                task_id += info->min_tasks + ((eidx + info->extra_tasks) >= info->esize);
-            });
+        int ret = kupl_dag_add_task(graph->dag, task, desc->dep_list, (uint32_t)desc->ndep, geid);
+        if (ret == KUPL_ERROR) {
+            return KUPL_ERROR;
+        } else if (ret == KUPL_DAG_TASK_NOT_READY) {
+            return KUPL_OK;
         }
-        return KUPL_OK;
     }
+    kupl_sched_add_tb(graph->sched, &task->tb);
+    return KUPL_OK;
+}
 
-    struct kupl_taskloop_dispatch_lambda_args {
-        uint32_t                eid;
-        uint32_t                eidx;
-        kupl_graph_h            graph;
-        kupl_taskloop_desc_t    *desc;
-        kupl_taskloop_info_t    info;
-        taskloop_lambda         lambda_func;
+static int taskloop_check(kupl_graph_h graph, kupl_taskloop_desc_t *desc)
+{
+    if (kupl_unlikely(graph == nullptr || desc == nullptr || desc->field_mask != KUPL_TASKLOOP_DESC_FIELD_DEFAULT ||
+                      desc->egroup == nullptr || desc->range == nullptr)) {
+        return KUPL_ERROR;
+    }
+    if (kupl_unlikely(kupl_egroup_get_cur_size(desc->egroup) == 0)) {
+        return KUPL_ERROR;
+    }
+    return kupl_check_range(desc->range, KUPL_LOOP_POLICY_TASK);
+}
+
+using taskloop_lambda = std::function<void(const kupl_nd_range_t *)>;
+
+struct kupl_taskloop_lambda_args {
+    kupl_nd_range_t range;
+    taskloop_lambda lambda_func;
+};
+using kupl_taskloop_lambda_args_t = struct kupl_taskloop_lambda_args;
+
+void kupl_taskloop_lambda_func(void *args)
+{
+    auto loop_args = (kupl_taskloop_lambda_args *)args;
+    loop_args->lambda_func(&loop_args->range);
+}
+
+static int taskloop_linear(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info,
+                           taskloop_lambda func)
+{
+    int geid = kupl_get_executor_num();
+    if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
+        return kupl_log_error_return(ERROR, "invoke KUPL functions on threads not managed by KUPL");
+    }
+    kupl_range_t *nd_range = desc->range->nd_range;
+    kupl_tb_desc_t user_desc = {
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = kupl_taskloop_lambda_func,
+        .args = nullptr,
+        .executor_id = 0,
     };
-    using kupl_taskloop_dispatch_lambda_args_t = struct kupl_taskloop_dispatch_lambda_args;
-
-    static void taskloop_dispatch(void *dispatch_args)
-    {
-        auto args = (kupl_taskloop_dispatch_lambda_args_t *)dispatch_args;
-        int geid = kupl_get_executor_num();
-        kupl_range_t *nd_range = args->desc->range->nd_range;
-        kupl_taskloop_info_t &info = args->info;
-
-        int64_t tasks_begin;
-        int64_t tasks_end;
-        if (info.extra_tasks != 0 && args->eidx >= info.extra_tasks) {
-            tasks_begin = args->eidx * info.min_tasks +  info.extra_tasks;
-            tasks_end = tasks_begin + info.min_tasks;
-        } else {
-            tasks_begin = args->eidx * info.max_tasks;
-            tasks_end = tasks_begin + info.max_tasks;
-        }
-        kupl_tb_desc_t user_desc = {
-            .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-            .func           = kupl_taskloop_lambda_func,
-            .args           = nullptr,
-            .executor_id    = (int)args->eid,
-        };
-        kupl_task_param_t task_param = {
-            .super = {
-                .type       = KUPL_TB_TYPE_TASK,
-                .user_desc  = &user_desc,
-                .graph      = args->graph,
-                .count      = &args->graph->count,
+    kupl_task_param_t task_param = {
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = graph,
+                .count = &graph->count,
             },
-            .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-            .inplace        = nullptr,
-            .udata_size     = sizeof(kupl_taskloop_lambda_args_t),
-        };
-        for (int64_t task_id = tasks_begin; task_id < tasks_end; task_id++) {
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_lambda_args_t),
+    };
+    // 5 tasks assigned to 3 threads
+    // min_tasks: 1, max_tasks: 2, extra_tasks: 2
+    //             t0 t1 t2
+    //           +-0  1  3 - min_tasks
+    // max_tasks-+
+    //           +-X  2  4
+    //                +--+
+    //              extra_tasks
+
+    for (int64_t i = 0; i < info->max_tasks; i++) {
+        int64_t task_id = i;
+        KUPL_FOR_EACH_EGROUP(desc->egroup, eid, eidx, {
+            if (i == info->min_tasks && ((eidx + info->extra_tasks) < info->esize)) {
+                task_id += info->min_tasks;
+                eidx++; // continue will escape eidx++, so do it here.
+                continue;
+            }
+            user_desc.executor_id = (int)eid;
             kupl_task_h task_inner = kupl_task_init(&task_param, geid);
             if (kupl_unlikely(task_inner == nullptr)) {
-                kupl_error("taskloop dispatch inner task create failed");
-                return;
+                return kupl_log_error_return(ERROR, "taskloop inner task create failed");
             }
             task_inner->tb.args = task_inner->udata;
             kupl_taskloop_lambda_args_t *taskloop_args =
-            reinterpret_cast<kupl_taskloop_lambda_args_t *>(task_inner->udata);
-            memset((void*)taskloop_args, 0, sizeof(kupl_taskloop_lambda_args_t));
-            taskloop_args->lambda_func = args->lambda_func;
+                reinterpret_cast<kupl_taskloop_lambda_args_t *>(task_inner->udata);
+            memset((void *)taskloop_args, 0, sizeof(kupl_taskloop_lambda_args_t));
+            taskloop_args->lambda_func = func;
             kupl_range_t *nd_range_args = taskloop_args->range.nd_range;
-            taskloop_args->range.dim = info.dim;
+            taskloop_args->range.dim = info->dim;
+
             int64_t task_id_tmp = task_id;
             int64_t block_idx = 0;
-            for (int d = 0; d < info.dim; d++) {
-                block_idx = task_id_tmp % info.blocks[d];
-                task_id_tmp /= info.blocks[d];
+            for (int d = 0; d < info->dim; d++) {
+                block_idx = task_id_tmp % info->blocks[d];
+                task_id_tmp /= info->blocks[d];
                 kupl_range_t &range = nd_range_args[d];
 
                 range.lower = nd_range[d].lower + block_idx * nd_range[d].blocksize;
@@ -753,80 +676,162 @@ namespace kupl {
                 range.step = nd_range[d].step;
                 range.blocksize = nd_range[d].blocksize;
             }
-            kupl_sched_add_tb(args->graph->sched, &task_inner->tb);
-        }
-    }
+            kupl_sched_add_tb(graph->sched, &task_inner->tb);
 
-    static int taskloop_concurrent(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info,
-                                   taskloop_lambda func)
-    {
-        int geid = kupl_get_executor_num();
-        if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
-            kupl_error("invoke KUPL functions on threads not managed by KUPL");
-            return KUPL_ERROR;
-        }
-        kupl_tb_desc_t user_desc = {
-            .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-            .func           = taskloop_dispatch,
-            .args           = nullptr,
-            .executor_id    = 0,
-        };
-        kupl_task_param_t task_param = {
-            .super = {
-                .type       = KUPL_TB_TYPE_TASK,
-                .user_desc  = &user_desc,
-                .graph      = graph,
-                .count      = &graph->count,
-            },
-            .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-            .inplace        = nullptr,
-            .udata_size     = sizeof(kupl_taskloop_dispatch_lambda_args_t),
-        };
-        KUPL_FOR_EACH_EGROUP_REV(desc->egroup, eid, eidx, {
-            user_desc.executor_id = (int)eid;
-            kupl_task_h task = kupl_task_init(&task_param, geid);
-            if (kupl_unlikely(task == nullptr)) {
-                return kupl_log_error_return(ERROR, "taskloop distribute task create failed");
-            }
-            task->tb.args = task->udata;
-            auto args = reinterpret_cast<kupl_taskloop_dispatch_lambda_args_t *>(task->udata);
-            memset((void*)args, 0, sizeof(kupl_taskloop_dispatch_lambda_args_t));
-            args->eid = eid;
-            args->eidx = eidx;
-            args->graph = graph;
-            args->desc = desc;
-            args->info = *info;
-            args->lambda_func = func;
-            kupl_sched_add_tb(graph->sched, &task->tb);
+            // update task_id
+            task_id += info->min_tasks + ((eidx + info->extra_tasks) >= info->esize);
         });
-        return KUPL_OK;
     }
+    return KUPL_OK;
+}
 
-    int graph_submit(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
-                     const std::function<void(const kupl_nd_range_t *)> &func)
-    {
-        if (kupl_unlikely(func == nullptr || taskloop_check(graph, desc) == KUPL_ERROR)) {
-            return kupl_log_error_return(ERROR, "graph add taskloop params invalid");
+struct kupl_taskloop_dispatch_lambda_args {
+    uint32_t eid;
+    uint32_t eidx;
+    kupl_graph_h graph;
+    kupl_taskloop_desc_t *desc;
+    kupl_taskloop_info_t info;
+    taskloop_lambda lambda_func;
+};
+using kupl_taskloop_dispatch_lambda_args_t = struct kupl_taskloop_dispatch_lambda_args;
+
+static void taskloop_dispatch(void *dispatch_args)
+{
+    auto args = (kupl_taskloop_dispatch_lambda_args_t *)dispatch_args;
+    int geid = kupl_get_executor_num();
+    kupl_range_t *nd_range = args->desc->range->nd_range;
+    kupl_taskloop_info_t &info = args->info;
+
+    int64_t tasks_begin;
+    int64_t tasks_end;
+    if (info.extra_tasks != 0 && args->eidx >= info.extra_tasks) {
+        tasks_begin = args->eidx * info.min_tasks + info.extra_tasks;
+        tasks_end = tasks_begin + info.min_tasks;
+    } else {
+        tasks_begin = args->eidx * info.max_tasks;
+        tasks_end = tasks_begin + info.max_tasks;
+    }
+    kupl_tb_desc_t user_desc = {
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = kupl_taskloop_lambda_func,
+        .args = nullptr,
+        .executor_id = (int)args->eid,
+    };
+    kupl_task_param_t task_param = {
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = args->graph,
+                .count = &args->graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_lambda_args_t),
+    };
+    for (int64_t task_id = tasks_begin; task_id < tasks_end; task_id++) {
+        kupl_task_h task_inner = kupl_task_init(&task_param, geid);
+        if (kupl_unlikely(task_inner == nullptr)) {
+            kupl_error("taskloop dispatch inner task create failed");
+            return;
         }
-        kupl_taskloop_info_t info;
-        info.esize = kupl_egroup_get_cur_size(desc->egroup);
-        info.dim = desc->range->dim;
-        // calculate blocks of each dim and total tasks
-        kupl_range_t *nd_range = desc->range->nd_range;
-        info.total_tasks = 1;
+        task_inner->tb.args = task_inner->udata;
+        kupl_taskloop_lambda_args_t *taskloop_args = reinterpret_cast<kupl_taskloop_lambda_args_t *>(task_inner->udata);
+        memset((void *)taskloop_args, 0, sizeof(kupl_taskloop_lambda_args_t));
+        taskloop_args->lambda_func = args->lambda_func;
+        kupl_range_t *nd_range_args = taskloop_args->range.nd_range;
+        taskloop_args->range.dim = info.dim;
+        int64_t task_id_tmp = task_id;
+        int64_t block_idx = 0;
         for (int d = 0; d < info.dim; d++) {
-            kupl_range_t &range = nd_range[d];
-            info.blocks[d] = ((range.upper - range.lower + range.blocksize - 1) / range.blocksize);
-            info.total_tasks *= info.blocks[d];
-        }
-        info.min_tasks = info.total_tasks / info.esize;
-        info.extra_tasks = info.total_tasks % info.esize;
-        info.max_tasks =  info.min_tasks + (info.extra_tasks > 0);
+            block_idx = task_id_tmp % info.blocks[d];
+            task_id_tmp /= info.blocks[d];
+            kupl_range_t &range = nd_range_args[d];
 
-        if (info.esize * taskloop_threshold > info.total_tasks) {
-            return taskloop_linear(graph, desc, &info, func);
-        } else {
-            return taskloop_concurrent(graph, desc, &info, func);
+            range.lower = nd_range[d].lower + block_idx * nd_range[d].blocksize;
+            if (nd_range[d].blocksize > 0) {
+                range.upper = kupl_min(nd_range[d].upper, range.lower + nd_range[d].blocksize);
+            } else {
+                range.upper = kupl_max(nd_range[d].upper, range.lower + nd_range[d].blocksize);
+            }
+            range.step = nd_range[d].step;
+            range.blocksize = nd_range[d].blocksize;
         }
+        kupl_sched_add_tb(args->graph->sched, &task_inner->tb);
     }
 }
+
+static int taskloop_concurrent(kupl_graph_h graph, kupl_taskloop_desc_t *desc, kupl_taskloop_info_t *info,
+                               taskloop_lambda func)
+{
+    int geid = kupl_get_executor_num();
+    if (kupl_unlikely(geid == KUPL_EXECUTOR_DEFAULT)) {
+        kupl_error("invoke KUPL functions on threads not managed by KUPL");
+        return KUPL_ERROR;
+    }
+    kupl_tb_desc_t user_desc = {
+        .field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+        .func = taskloop_dispatch,
+        .args = nullptr,
+        .executor_id = 0,
+    };
+    kupl_task_param_t task_param = {
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &user_desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = nullptr,
+        .udata_size = sizeof(kupl_taskloop_dispatch_lambda_args_t),
+    };
+    KUPL_FOR_EACH_EGROUP_REV(desc->egroup, eid, eidx, {
+        user_desc.executor_id = (int)eid;
+        kupl_task_h task = kupl_task_init(&task_param, geid);
+        if (kupl_unlikely(task == nullptr)) {
+            return kupl_log_error_return(ERROR, "taskloop distribute task create failed");
+        }
+        task->tb.args = task->udata;
+        auto args = reinterpret_cast<kupl_taskloop_dispatch_lambda_args_t *>(task->udata);
+        memset((void *)args, 0, sizeof(kupl_taskloop_dispatch_lambda_args_t));
+        args->eid = eid;
+        args->eidx = eidx;
+        args->graph = graph;
+        args->desc = desc;
+        args->info = *info;
+        args->lambda_func = func;
+        kupl_sched_add_tb(graph->sched, &task->tb);
+    });
+    return KUPL_OK;
+}
+
+int graph_submit(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
+                 const std::function<void(const kupl_nd_range_t *)> &func)
+{
+    if (kupl_unlikely(func == nullptr || taskloop_check(graph, desc) == KUPL_ERROR)) {
+        return kupl_log_error_return(ERROR, "graph add taskloop params invalid");
+    }
+    kupl_taskloop_info_t info;
+    info.esize = kupl_egroup_get_cur_size(desc->egroup);
+    info.dim = desc->range->dim;
+    // calculate blocks of each dim and total tasks
+    kupl_range_t *nd_range = desc->range->nd_range;
+    info.total_tasks = 1;
+    for (int d = 0; d < info.dim; d++) {
+        kupl_range_t &range = nd_range[d];
+        info.blocks[d] = ((range.upper - range.lower + range.blocksize - 1) / range.blocksize);
+        info.total_tasks *= info.blocks[d];
+    }
+    info.min_tasks = info.total_tasks / info.esize;
+    info.extra_tasks = info.total_tasks % info.esize;
+    info.max_tasks = info.min_tasks + (info.extra_tasks > 0);
+
+    if (info.esize * taskloop_threshold > info.total_tasks) {
+        return taskloop_linear(graph, desc, &info, func);
+    } else {
+        return taskloop_concurrent(graph, desc, &info, func);
+    }
+}
+} // namespace kupl

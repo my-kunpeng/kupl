@@ -21,7 +21,7 @@ public:
             data = stackData;
             isHeap = false;
         } else {
-            data = new (std::nothrow)T[size];
+            data = new (std::nothrow) T[size];
             isHeap = true;
         }
     }
@@ -33,25 +33,25 @@ public:
         }
     }
 
-    kupl_vla(const kupl_vla&) = delete;
-    kupl_vla& operator=(const kupl_vla&) = delete;
+    kupl_vla(const kupl_vla &) = delete;
+    kupl_vla &operator=(const kupl_vla &) = delete;
 
-    T& operator[](size_t index)
+    T &operator[](size_t index)
     {
         return data[index];
     }
 
-    T& operator[](int index)
+    T &operator[](int index)
     {
         return data[index];
     }
 
-    T& operator[](uint32_t index)
+    T &operator[](uint32_t index)
     {
         return data[index];
     }
 
-    const T& operator[](size_t index) const
+    const T &operator[](size_t index) const
     {
         return data[index];
     }
@@ -60,11 +60,11 @@ public:
     {
         return data;
     }
+
 private:
-    T* data = nullptr;
+    T *data = nullptr;
     T stackData[THRESHOLD] = {};
     bool isHeap = true;
 };
-
 
 #endif

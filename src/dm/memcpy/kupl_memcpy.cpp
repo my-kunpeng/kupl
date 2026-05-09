@@ -30,7 +30,6 @@
 #include "utils/sys/kupl_hardware.h"
 #include "mt/kupl_queue.h"
 
-
 static thread_local int core_index = SDMA_CHN_INDEX_INIT;
 static bool sdma_memcpy_func_init = false;
 static init_chn_sdma kupl_sdma_init_chn = nullptr;
@@ -52,8 +51,8 @@ bool kupl_sdma_memcpy_func_init()
     kupl_sdma_icopy_data = func_l.kupl_sdma_icopy_data;
     kupl_sdma_iwait_chn = func_l.kupl_sdma_iwait_chn;
     kupl_sdma_iquery_chn = func_l.kupl_sdma_iquery_chn;
-    if (kupl_sdma_init_chn && kupl_sdma_get_process_id && kupl_sdma_deinit_chn
-    && kupl_sdma_icopy_data && kupl_sdma_iwait_chn && kupl_sdma_iquery_chn) {
+    if (kupl_sdma_init_chn && kupl_sdma_get_process_id && kupl_sdma_deinit_chn && kupl_sdma_icopy_data &&
+        kupl_sdma_iwait_chn && kupl_sdma_iquery_chn) {
         return true;
     } else {
         return false;
@@ -90,8 +89,8 @@ int kupl_graph_wait_req(void *chn, sdma_request_t *req, kupl_graph_h graph)
 
 int kupl_sdma_wait_event(kupl_event_h event)
 {
-    if (kupl_unlikely(event == nullptr || (event->m_args == nullptr && event->req == nullptr)
-        || !sdma_memcpy_func_init)) {
+    if (kupl_unlikely(event == nullptr || (event->m_args == nullptr && event->req == nullptr) ||
+                      !sdma_memcpy_func_init)) {
         return kupl_log_error_return(ERROR, "kupl sdma wait event failed.");
     }
     if (kupl_unlikely(KUPL_ATOMIC_LD(&event->status) == KUPL_EVENT_STATUS_COMPLETE)) {
@@ -103,7 +102,7 @@ int kupl_sdma_wait_event(kupl_event_h event)
     }
     int ret = KUPL_OK;
     if (event->q != nullptr) {
-        sdma_request_t* request = &event->req->request;
+        sdma_request_t *request = &event->req->request;
         event->lock->lock(event->lock);
         if (event->req->flag) {
             event->req->flag = false;
@@ -150,8 +149,8 @@ int kupl_sdma_wait_req(kupl_queue_h queue, sdma_request_t *request)
 
 int kupl_sdma_query_event(kupl_event_h event)
 {
-    if (kupl_unlikely(event == nullptr || (event->m_args == nullptr && event->req == nullptr)
-        || !sdma_memcpy_func_init)) {
+    if (kupl_unlikely(event == nullptr || (event->m_args == nullptr && event->req == nullptr) ||
+                      !sdma_memcpy_func_init)) {
         kupl_error("kupl sdma query event failed.");
         return KUPL_EVENT_STATUS_COMPLETE;
     }
@@ -160,7 +159,7 @@ int kupl_sdma_query_event(kupl_event_h event)
     }
     int ret = KUPL_EVENT_STATUS_COMPLETE;
     if (event->q != nullptr) {
-        sdma_request_t* request = &event->req->request;
+        sdma_request_t *request = &event->req->request;
         event->lock->lock(event->lock);
         if (event->req->flag) {
             ret = kupl_sdma_query_req(event->q->sdma_chn, request);
@@ -225,7 +224,7 @@ int kupl_set_sdma_async_event(kupl_event_t *event)
     return KUPL_OK;
 }
 
-static inline void kupl_sdma_wait_async_task(kupl_sdma_chn_h chn, sdma_request_t* request)
+static inline void kupl_sdma_wait_async_task(kupl_sdma_chn_h chn, sdma_request_t *request)
 {
     auto graph = kupl_get_global_graph();
     if (kupl_unlikely(graph == nullptr)) {
@@ -243,9 +242,9 @@ static inline void kupl_sdma_wait_async_task(kupl_sdma_chn_h chn, sdma_request_t
     }
 }
 
-static inline void kupl_sdma_create_task(sdma_sqe_task_t& s_task, uint64_t src_addr, uint32_t src_sl,
-                                         uint64_t dst_addr, uint32_t dst_sl, uint32_t stride_num,
-                                         uint32_t src_pasid, uint32_t dst_pasid, uint32_t length, uint8_t qos)
+static inline void kupl_sdma_create_task(sdma_sqe_task_t &s_task, uint64_t src_addr, uint32_t src_sl, uint64_t dst_addr,
+                                         uint32_t dst_sl, uint32_t stride_num, uint32_t src_pasid, uint32_t dst_pasid,
+                                         uint32_t length, uint8_t qos)
 {
     s_task.src_addr = src_addr;
     s_task.dst_addr = dst_addr;
@@ -286,7 +285,7 @@ int kupl_memcpy_init()
     return KUPL_OK;
 }
 
-void* kupl_get_sdma_chn()
+void *kupl_get_sdma_chn()
 {
     if (sdma_memcpy_func_init) {
         int core_id = kupl_get_core_index();
@@ -296,11 +295,9 @@ void* kupl_get_sdma_chn()
             kupl_error("create sdma channl failed");
             return nullptr;
         }
-        int chn_index = fd_index * cores_per_sdma +
-                        id % cores_per_sdma;
+        int chn_index = fd_index * cores_per_sdma + id % cores_per_sdma;
         if (kupl_unlikely(g_sdma_chns[chn_index] == nullptr)) {
-            g_sdma_chns[chn_index] =
-            kupl_sdma_init_chn(g_sdma_fd[fd_index], chn_index % cores_per_sdma);
+            g_sdma_chns[chn_index] = kupl_sdma_init_chn(g_sdma_fd[fd_index], chn_index % cores_per_sdma);
             if (g_sdma_chns[chn_index] == nullptr) {
                 kupl_error("create sdma channl failed");
                 return nullptr;
@@ -311,11 +308,11 @@ void* kupl_get_sdma_chn()
     return nullptr;
 }
 
-void* kupl_get_sdma_chn_by_cid(int cid)
+void *kupl_get_sdma_chn_by_cid(int cid)
 {
     if (kupl_unlikely(g_sdma_chns[cid] == nullptr)) {
         g_sdma_chns[cid] =
-        kupl_sdma_init_chn(g_sdma_fd[cid / cores_per_sdma % KUPL_MAX_SDMA_DEVICE_SIZE], cid % cores_per_sdma);
+            kupl_sdma_init_chn(g_sdma_fd[cid / cores_per_sdma % KUPL_MAX_SDMA_DEVICE_SIZE], cid % cores_per_sdma);
         if (g_sdma_chns[cid] == nullptr) {
             kupl_error("creat sdma channl failed");
             return nullptr;
@@ -335,9 +332,9 @@ typedef struct kupl_memcpy_task_package {
     size_t count;
 } kupl_memcpy_task_package_t;
 
-static void kupl_memcpy_pf_task(void* args, int local_tid, int local_tnum)
+static void kupl_memcpy_pf_task(void *args, int local_tid, int local_tnum)
 {
-    kupl_memcpy_task_package_t* package = (kupl_memcpy_task_package_t*)args;
+    kupl_memcpy_task_package_t *package = (kupl_memcpy_task_package_t *)args;
     size_t tid = (size_t)local_tid;
     size_t tnum = (size_t)local_tnum;
     void *dst = package->dst;
@@ -351,12 +348,12 @@ static void kupl_memcpy_pf_task(void* args, int local_tid, int local_tnum)
     } else {
         len = 0;
     }
-    memcpy((char*)dst + offset, (const char*)src + offset, len);
+    memcpy((char *)dst + offset, (const char *)src + offset, len);
 }
 
-static void kupl_memcpy_task(void* args)
+static void kupl_memcpy_task(void *args)
 {
-    kupl_memcpy_task_package_t* package = (kupl_memcpy_task_package_t*)args;
+    kupl_memcpy_task_package_t *package = (kupl_memcpy_task_package_t *)args;
     void *dst = package->dst;
     const void *src = package->src;
     size_t count = package->count;
@@ -365,7 +362,7 @@ static void kupl_memcpy_task(void* args)
     kupl_memory_free(package, geid);
 }
 
-static void kupl_memcpy_sdma_task(void* args)
+static void kupl_memcpy_sdma_task(void *args)
 {
     kupl_sdma_req_t *req = (kupl_sdma_req_t *)args;
     kupl_sdma_chn_h chn = req->chn;
@@ -396,17 +393,16 @@ int kupl_memcpy(void *dst, const void *src, size_t count)
         return KUPL_ERROR;
     }
     if (sdma_memcpy_func_init) {
-        if (count < (size_t)kupl_config_get_value(KUPL_SDMA_MEMCPY_THRESHOLD)
-            || !kupl_get_sdma_chn_by_cid(kupl_get_core_index())
-            || !kupl_memory_is_pinned(dst, count) || !kupl_memory_is_pinned(const_cast<void *>(src), count)) {
+        if (count < (size_t)kupl_config_get_value(KUPL_SDMA_MEMCPY_THRESHOLD) ||
+            !kupl_get_sdma_chn_by_cid(kupl_get_core_index()) || !kupl_memory_is_pinned(dst, count) ||
+            !kupl_memory_is_pinned(const_cast<void *>(src), count)) {
             memcpy(dst, src, count);
         } else {
             kupl_sdma_req_t req;
             int cid = kupl_get_core_index();
             int device_id = cid / cores_per_sdma % KUPL_MAX_SDMA_DEVICE_SIZE;
-            kupl_sdma_create_task(req.task, (uint64_t)src, 0, (uint64_t)dst, 0, 0,
-                                  g_sdma_process_id[device_id], g_sdma_process_id[device_id],
-                                  (uint32_t)count, 0);
+            kupl_sdma_create_task(req.task, (uint64_t)src, 0, (uint64_t)dst, 0, 0, g_sdma_process_id[device_id],
+                                  g_sdma_process_id[device_id], (uint32_t)count, 0);
             int ret = kupl_sdma_icopy_data(g_sdma_chns[cid], &req.task, 1, &req.request);
             if (ret != 0) {
                 return kupl_log_error_return(ERROR, "sdma_icopy_data failed, ret = %d", ret);
@@ -419,11 +415,7 @@ int kupl_memcpy(void *dst, const void *src, size_t count)
     } else if (count < (size_t)g_kupl_memcpy_mt_threshold) {
         memcpy(dst, src, count);
     } else {
-        kupl_memcpy_task_package_t package {
-            .dst = dst,
-            .src = src,
-            .count = count
-        };
+        kupl_memcpy_task_package_t package{.dst = dst, .src = src, .count = count};
         int threads = kupl_get_kernel_concurrency();
         kupl_invoke_parallel(kupl_memcpy_pf_task, (&package), threads);
     }
@@ -438,19 +430,17 @@ int kupl_submit_memcpy_task(void *dst, const void *src, size_t count, kupl_queue
     kupl_warn("kupl_memcpy_async failed, fallback to kupl_memcpy");
     int geid = kupl_get_executor_num();
     kupl_memcpy_task_package_t *package =
-    (kupl_memcpy_task_package_t *)kupl_memory_calloc(sizeof(kupl_memcpy_task_package_t), geid);
+        (kupl_memcpy_task_package_t *)kupl_memory_calloc(sizeof(kupl_memcpy_task_package_t), geid);
     if (package == nullptr) {
         return KUPL_ERROR;
     }
     package->count = count;
     package->dst = dst;
     package->src = src;
-    kupl_queue_item_desc_t desc = {
-        .field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_NAME,
-        .func = kupl_memcpy_task,
-        .args = package,
-        .name = "kupl_memcpy"
-    };
+    kupl_queue_item_desc_t desc = {.field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_NAME,
+                                   .func = kupl_memcpy_task,
+                                   .args = package,
+                                   .name = "kupl_memcpy"};
     kupl_queue_submit(queue, &desc);
     return KUPL_OK;
 }
@@ -459,7 +449,7 @@ int kupl_submit_memcpy_async_task(kupl_sdma_req_t *req, kupl_queue_h queue, kupl
 {
     uint8_t priority = queue->priority < 0 ? 0 : (uint8_t)queue->priority * 4;
     uint32_t field_mask = queue->priority < 0 ? KUPL_TB_DESC_FIELD_NAME :
-                          KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
+                                                KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
     req->chn = queue->sdma_chn;
     kupl_tb_desc_t desc = {
         .field_mask = field_mask,
@@ -490,8 +480,8 @@ int kupl_memcpy_async_with_queue(uint64_t src_addr, uint32_t src_sl, uint64_t ds
             goto error;
         }
         kupl_sdma_req_t req;
-        kupl_sdma_create_task(req.task, src_addr, src_sl, dst_addr, dst_sl, stride_num,
-                              src_pasid, dst_pasid, length, priority);
+        kupl_sdma_create_task(req.task, src_addr, src_sl, dst_addr, dst_sl, stride_num, src_pasid, dst_pasid, length,
+                              priority);
         ret = kupl_sdma_icopy_data(queue->sdma_chn, &req.task, 1, &event->req->request);
         if (kupl_unlikely(ret != 0)) {
             kupl_event_set_status(event, KUPL_EVENT_STATUS_COMPLETE);
@@ -513,8 +503,8 @@ int kupl_memcpy_async_with_queue(uint64_t src_addr, uint32_t src_sl, uint64_t ds
         if (kupl_unlikely(req == nullptr)) {
             goto error;
         }
-        kupl_sdma_create_task(req->task, src_addr, src_sl, dst_addr, dst_sl, stride_num,
-                              src_pasid, dst_pasid, length, priority);
+        kupl_sdma_create_task(req->task, src_addr, src_sl, dst_addr, dst_sl, stride_num, src_pasid, dst_pasid, length,
+                              priority);
         if (kupl_unlikely(kupl_submit_memcpy_async_task(req, queue, event) == KUPL_ERROR)) {
             kupl_memory_free(req, geid);
             goto error;
@@ -544,10 +534,10 @@ int kupl_memcpy_async(void *dst, const void *src, size_t count, kupl_queue_h que
                 return KUPL_ERROR;
             }
             kupl_sdma_req_t req;
-            kupl_sdma_create_task(req.task, (uint64_t)src, 0, (uint64_t)dst, 0, 0,
-                                  g_sdma_process_id[device_id], g_sdma_process_id[device_id], (uint32_t)count, 0);
-            ret = kupl_sdma_icopy_data(g_sdma_chns[cid], &req.task, 1,
-                                       &((kupl_sdma_async_t *)(event->m_args))->request);
+            kupl_sdma_create_task(req.task, (uint64_t)src, 0, (uint64_t)dst, 0, 0, g_sdma_process_id[device_id],
+                                  g_sdma_process_id[device_id], (uint32_t)count, 0);
+            ret =
+                kupl_sdma_icopy_data(g_sdma_chns[cid], &req.task, 1, &((kupl_sdma_async_t *)(event->m_args))->request);
             if (kupl_unlikely(ret != 0)) {
                 kupl_event_set_status(event, KUPL_EVENT_STATUS_COMPLETE);
                 return kupl_log_error_return(ERROR, "sdma_icopy_data failed, ret = %d", ret);
@@ -555,9 +545,9 @@ int kupl_memcpy_async(void *dst, const void *src, size_t count, kupl_queue_h que
             return KUPL_OK;
         } else {
             uint8_t priority = queue->priority < 0 ? 0 : (uint8_t)queue->priority * 4;
-            int ret = kupl_memcpy_async_with_queue((uint64_t)src, 0, (uint64_t)dst, 0, 0,
-                                                   g_sdma_process_id[device_id], g_sdma_process_id[device_id],
-                                                   (uint32_t)count, priority, queue, event);
+            int ret = kupl_memcpy_async_with_queue((uint64_t)src, 0, (uint64_t)dst, 0, 0, g_sdma_process_id[device_id],
+                                                   g_sdma_process_id[device_id], (uint32_t)count, priority, queue,
+                                                   event);
             if (kupl_unlikely(ret == KUPL_ERROR)) {
                 return KUPL_ERROR;
             }
@@ -582,7 +572,7 @@ typedef struct kupl_memcpy2d_task_package {
 
 static void kupl_memcpy2d_pf_task(void *args, int tid, int tnum)
 {
-    kupl_memcpy2d_task_package_t* package = (kupl_memcpy2d_task_package_t*)args;
+    kupl_memcpy2d_task_package_t *package = (kupl_memcpy2d_task_package_t *)args;
     void *dst = package->dst;
     size_t dpitch = package->dpitch;
     const void *src = package->src;
@@ -605,8 +595,7 @@ static void kupl_memcpy2d_pf_task(void *args, int tid, int tnum)
     size_t end_col = end_byte % width;
 
     // adjust the start address to align with the cache line
-    size_t start_addr = ((size_t)(src) + start_row * spitch + start_col) /
-                        KUPL_CACHE_LINE * KUPL_CACHE_LINE;
+    size_t start_addr = ((size_t)(src) + start_row * spitch + start_col) / KUPL_CACHE_LINE * KUPL_CACHE_LINE;
     // if start_col less than left boundary
     if (start_addr < (uintptr_t)src + start_row * spitch) {
         start_byte = start_row * width;
@@ -616,8 +605,7 @@ static void kupl_memcpy2d_pf_task(void *args, int tid, int tnum)
     // adjust the end address to align with the cache line
     // only if end_col not equal right boundary
     if (end_col != width - 1) {
-        size_t end_addr = ((size_t)(src) + end_row * spitch + end_col) /
-                          KUPL_CACHE_LINE * KUPL_CACHE_LINE;
+        size_t end_addr = ((size_t)(src) + end_row * spitch + end_col) / KUPL_CACHE_LINE * KUPL_CACHE_LINE;
         // if end_col less than left boundary
         if (end_addr < (uintptr_t)src + end_row * spitch) {
             end_byte = end_row * width;
@@ -637,8 +625,7 @@ static void kupl_memcpy2d_pf_task(void *args, int tid, int tnum)
         size_t col_start = (row == start_row) ? start_col : 0;
         size_t col_end = (row == end_row) ? end_col : width;
         if (col_end > col_start) {
-            memcpy((char *)dst + row * dpitch + col_start,
-                   (const char *)src + row * spitch + col_start,
+            memcpy((char *)dst + row * dpitch + col_start, (const char *)src + row * spitch + col_start,
                    col_end - col_start);
         }
     }
@@ -646,7 +633,7 @@ static void kupl_memcpy2d_pf_task(void *args, int tid, int tnum)
 
 static void kupl_memcpy2d_task(void *args)
 {
-    kupl_memcpy2d_task_package_t* package = (kupl_memcpy2d_task_package_t*)args;
+    kupl_memcpy2d_task_package_t *package = (kupl_memcpy2d_task_package_t *)args;
     void *dst = package->dst;
     size_t dpitch = package->dpitch;
     const void *src = package->src;
@@ -661,18 +648,18 @@ static void kupl_memcpy2d_task(void *args)
 void kupl_glibc_memcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height)
 {
     for (size_t i = 0; i < height; i++) {
-        memcpy(((char*)dst + i * dpitch), ((const char *)src + i * spitch), width);
+        memcpy(((char *)dst + i * dpitch), ((const char *)src + i * spitch), width);
     }
 }
 
 int kupl_memcpy2d_check(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height)
 {
-    if (kupl_unlikely(dst == nullptr || src == nullptr || spitch < width || dpitch < width
-        || (height != 0 && (SIZE_MAX / height < spitch || SIZE_MAX / height < dpitch)))) {
+    if (kupl_unlikely(dst == nullptr || src == nullptr || spitch < width || dpitch < width ||
+                      (height != 0 && (SIZE_MAX / height < spitch || SIZE_MAX / height < dpitch)))) {
         return KUPL_ERROR;
     }
-    if (kupl_unlikely(spitch - width > UINT32_MAX || dpitch - width > UINT32_MAX
-        || width > UINT32_MAX || height > UINT32_MAX)) {
+    if (kupl_unlikely(spitch - width > UINT32_MAX || dpitch - width > UINT32_MAX || width > UINT32_MAX ||
+                      height > UINT32_MAX)) {
         return kupl_log_error_return(ERROR, "sdma_icopy_data can't support data length more than UINT32_MAX");
     }
     return KUPL_OK;
@@ -711,22 +698,16 @@ int kupl_memcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size
     } else if (width * height < (size_t)g_kupl_memcpy_mt_threshold) {
         kupl_glibc_memcpy2d(dst, dpitch, src, spitch, width, height);
     } else {
-        kupl_memcpy2d_task_package_t package {
-            .dst = dst,
-            .dpitch = dpitch,
-            .src = src,
-            .spitch = spitch,
-            .width = width,
-            .height = height
-        };
+        kupl_memcpy2d_task_package_t package{
+            .dst = dst, .dpitch = dpitch, .src = src, .spitch = spitch, .width = width, .height = height};
         int threads = kupl_get_kernel_concurrency();
         kupl_invoke_parallel(kupl_memcpy2d_pf_task, (&package), threads);
     }
     return KUPL_OK;
 }
 
-int kupl_submit_memcpy2d_task(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width,
-                              size_t height, kupl_queue_h queue)
+int kupl_submit_memcpy2d_task(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height,
+                              kupl_queue_h queue)
 {
     if (queue == nullptr) {
         return KUPL_ERROR;
@@ -734,7 +715,7 @@ int kupl_submit_memcpy2d_task(void *dst, size_t dpitch, const void *src, size_t 
     kupl_warn("kupl_memcpy2d_async failed, fallback to kupl_memcpy2d");
     int geid = kupl_get_executor_num();
     kupl_memcpy2d_task_package_t *package =
-    (kupl_memcpy2d_task_package_t *)kupl_memory_calloc(sizeof(kupl_memcpy2d_task_package_t), geid);
+        (kupl_memcpy2d_task_package_t *)kupl_memory_calloc(sizeof(kupl_memcpy2d_task_package_t), geid);
     if (package == nullptr) {
         return KUPL_ERROR;
     }
@@ -744,12 +725,10 @@ int kupl_submit_memcpy2d_task(void *dst, size_t dpitch, const void *src, size_t 
     package->spitch = spitch;
     package->width = width;
     package->height = height;
-    kupl_queue_item_desc_t desc = {
-        .field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_NAME,
-        .func = kupl_memcpy2d_task,
-        .args = package,
-        .name = "kupl_memcpy2d"
-    };
+    kupl_queue_item_desc_t desc = {.field_mask = KUPL_QUEUE_ITEM_DESC_FIELD_NAME,
+                                   .func = kupl_memcpy2d_task,
+                                   .args = package,
+                                   .name = "kupl_memcpy2d"};
     kupl_queue_submit(queue, &desc);
     return KUPL_OK;
 }
@@ -760,8 +739,7 @@ int kupl_memcpy2d_async(void *dst, size_t dpitch, const void *src, size_t spitch
     if (!g_core_inited && kupl_init() == KUPL_ERROR) {
         return KUPL_ERROR;
     }
-    if (kupl_unlikely(kupl_memcpy2d_check(dst, dpitch, src, spitch, width, height) == KUPL_ERROR
-        || event == nullptr)) {
+    if (kupl_unlikely(kupl_memcpy2d_check(dst, dpitch, src, spitch, width, height) == KUPL_ERROR || event == nullptr)) {
         return KUPL_ERROR;
     }
     if (width * height != 0 && sdma_memcpy_func_init) {
@@ -776,8 +754,8 @@ int kupl_memcpy2d_async(void *dst, size_t dpitch, const void *src, size_t spitch
             kupl_sdma_create_task(req.task, (uint64_t)src, (uint32_t)(spitch - width), (uint64_t)dst,
                                   (uint32_t)(dpitch - width), (uint32_t)height, g_sdma_process_id[device_id],
                                   g_sdma_process_id[device_id], (uint32_t)width, 0);
-            ret = kupl_sdma_icopy_data(g_sdma_chns[cid], &req.task, 1,
-                                       &((kupl_sdma_async_t *)(event->m_args))->request);
+            ret =
+                kupl_sdma_icopy_data(g_sdma_chns[cid], &req.task, 1, &((kupl_sdma_async_t *)(event->m_args))->request);
             if (kupl_unlikely(ret != 0)) {
                 kupl_event_set_status(event, KUPL_EVENT_STATUS_COMPLETE);
                 return kupl_log_error_return(ERROR, "sdma_icopy_data failed, ret = %d", ret);
@@ -785,9 +763,9 @@ int kupl_memcpy2d_async(void *dst, size_t dpitch, const void *src, size_t spitch
             return KUPL_OK;
         } else {
             uint8_t priority = queue->priority < 0 ? 0 : (uint8_t)queue->priority * 4;
-            int ret = kupl_memcpy_async_with_queue((uint64_t)src, (uint32_t)(spitch - width), (uint64_t)dst,
-                (uint32_t)(dpitch - width), (uint32_t)height, g_sdma_process_id[device_id],
-                g_sdma_process_id[device_id], (uint32_t)width, priority, queue, event);
+            int ret = kupl_memcpy_async_with_queue(
+                (uint64_t)src, (uint32_t)(spitch - width), (uint64_t)dst, (uint32_t)(dpitch - width), (uint32_t)height,
+                g_sdma_process_id[device_id], g_sdma_process_id[device_id], (uint32_t)width, priority, queue, event);
             if (kupl_unlikely(ret == KUPL_ERROR)) {
                 return KUPL_ERROR;
             }

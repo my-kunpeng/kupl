@@ -34,7 +34,7 @@ void kupl_fence_init()
 
 kupl_fence_h kupl_fence_create(kupl_fence_algo_t algo, kupl_shm_win_h local_win)
 {
-    auto fence = static_cast<kupl_fence_t*>(kupl_malloc_inner(sizeof(kupl_fence_t)));
+    auto fence = static_cast<kupl_fence_t *>(kupl_malloc_inner(sizeof(kupl_fence_t)));
     if (kupl_unlikely(fence == nullptr)) {
         return nullptr;
     }

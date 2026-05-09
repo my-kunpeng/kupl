@@ -128,14 +128,15 @@ int kupl_event_init(kupl_event_t *event, kupl_queue_t *queue, kupl_tb_desc_t *de
     desc->args = event;
 
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = desc,
-            .graph      = graph,
-            .count      = &graph->count,
-        },
-        .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-        .inplace        = event->task,
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = desc,
+                .graph = graph,
+                .count = &graph->count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+        .inplace = event->task,
     };
     event->task = kupl_task_init(&task_param, geid);
     if (kupl_unlikely(event->task == nullptr)) {
@@ -215,8 +216,7 @@ int kupl_event_query(kupl_event_h event)
     }
     if (event->type == KUPL_EVENT_TYPE_SDMA) {
         int ret = kupl_sdma_query_event(event);
-        if (KUPL_ATOMIC_LD(&event->status) != KUPL_EVENT_STATUS_COMPLETE &&
-            ret == KUPL_EVENT_STATUS_COMPLETE) {
+        if (KUPL_ATOMIC_LD(&event->status) != KUPL_EVENT_STATUS_COMPLETE && ret == KUPL_EVENT_STATUS_COMPLETE) {
             kupl_event_set_status(event, KUPL_EVENT_STATUS_COMPLETE);
         }
         return ret;

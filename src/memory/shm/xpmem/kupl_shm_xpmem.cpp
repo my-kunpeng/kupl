@@ -29,10 +29,9 @@ static kupl_shm_xpmem_segid_t g_xsegid = -1;
 static kupl_shm_xpmem_remote_keys_t g_remote_keys;
 static kupl_shm_xpmem_remote_caches_t g_remote_caches;
 
-static kupl_always_inline
-int kupl_shm_xpmem_make_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
+static kupl_always_inline int kupl_shm_xpmem_make_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
 {
-    g_xsegid = kupl_shm_xpmem_make(0, XPMEM_MAXADDR_SIZE, XPMEM_PERMIT_MODE, (void*)0600);
+    g_xsegid = kupl_shm_xpmem_make(0, XPMEM_MAXADDR_SIZE, XPMEM_PERMIT_MODE, (void *)0600);
     if (g_xsegid < 0) {
         return kupl_log_error_return(ERROR, "kupl_shm_xpmem_make failed");
     }
@@ -41,8 +40,7 @@ int kupl_shm_xpmem_make_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_xpmem_get_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
+static kupl_always_inline int kupl_shm_xpmem_get_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
 {
     if (g_xsegid < 0) {
         return kupl_shm_xpmem_make_global_xsegid(xsegid_p);
@@ -52,8 +50,7 @@ int kupl_shm_xpmem_get_global_xsegid(kupl_shm_xpmem_segid_t *xsegid_p)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_xpmem_remove_global_xsegid()
+static kupl_always_inline int kupl_shm_xpmem_remove_global_xsegid()
 {
     if (g_xsegid > 0) {
         return kupl_shm_xpmem_remove(g_xsegid);
@@ -63,7 +60,7 @@ int kupl_shm_xpmem_remove_global_xsegid()
 }
 
 static kupl_shm_xpmem_apid_t kupl_shm_xpmem_get_apid(kupl_shm_xpmem_remote_keys_t &remote_keys,
-    kupl_shm_xpmem_segid_t remote_xsegid)
+                                                     kupl_shm_xpmem_segid_t remote_xsegid)
 {
     kupl_shm_xpmem_apid_t remote_xapid = -1;
 
@@ -83,35 +80,35 @@ static kupl_shm_xpmem_apid_t kupl_shm_xpmem_get_apid(kupl_shm_xpmem_remote_keys_
     return remote_xapid;
 }
 
-static kupl_shm_xpmem_remote_region_t kupl_shm_xpmem_create_remote_region(
-    kupl_shm_xpmem_apid_t xapid, uintptr_t remote_addr, size_t length)
+static kupl_shm_xpmem_remote_region_t kupl_shm_xpmem_create_remote_region(kupl_shm_xpmem_apid_t xapid,
+                                                                          uintptr_t remote_addr, size_t length)
 {
     kupl_shm_xpmem_addr_t xaddr;
     kupl_shm_xpmem_remote_region_t remote_region;
 
     remote_region.start = kupl_shm_align_down_pow2(remote_addr, PAGE_SIZE);
-    remote_region.end = kupl_shm_align_up_pow2((remote_addr+length), PAGE_SIZE);
+    remote_region.end = kupl_shm_align_up_pow2((remote_addr + length), PAGE_SIZE);
 
     xaddr.apid = xapid;
     xaddr.offset = remote_region.start;
-    remote_region.attach_pg_aligned_addr = kupl_shm_xpmem_attach(xaddr, remote_region.end - remote_region.start,
-                                                                 nullptr);
+    remote_region.attach_pg_aligned_addr =
+        kupl_shm_xpmem_attach(xaddr, remote_region.end - remote_region.start, nullptr);
     if (remote_region.attach_pg_aligned_addr == nullptr) {
         kupl_error("kupl_shm_xpmem_attach failed");
     }
     return remote_region;
 }
 
-static kupl_shm_xpmem_remote_region_t kupl_shm_xpmem_get_remote_region(
-    kupl_shm_xpmem_remote_regions_t &remote_regions, kupl_shm_xpmem_apid_t xapid,
-    uintptr_t remote_addr, size_t length)
+static kupl_shm_xpmem_remote_region_t kupl_shm_xpmem_get_remote_region(kupl_shm_xpmem_remote_regions_t &remote_regions,
+                                                                       kupl_shm_xpmem_apid_t xapid,
+                                                                       uintptr_t remote_addr, size_t length)
 {
     kupl_shm_xpmem_remote_region_t remote_region;
     uintptr_t start;
     uintptr_t end;
 
     start = kupl_shm_align_down_pow2(remote_addr, PAGE_SIZE);
-    end = kupl_shm_align_up_pow2((remote_addr+length), PAGE_SIZE);
+    end = kupl_shm_align_up_pow2((remote_addr + length), PAGE_SIZE);
 
     for (auto iter = remote_regions.begin(); iter != remote_regions.end(); iter++) {
         if ((start >= iter->start) && (end <= iter->end)) {
@@ -157,7 +154,7 @@ static int kupl_shm_xpmem_delete_remote_keys(kupl_shm_xpmem_remote_keys_t &remot
 }
 
 static int kupl_shm_xpmem_get_trans_mem(kupl_shm_xpmem_packed_params_t params,
-    kupl_shm_xpmem_remote_trans_mem_t *remote_trans_mem_p)
+                                        kupl_shm_xpmem_remote_trans_mem_t *remote_trans_mem_p)
 {
     kupl_shm_xpmem_apid_t xapid;
     kupl_shm_xpmem_remote_region_t remote_region;
@@ -170,8 +167,7 @@ static int kupl_shm_xpmem_get_trans_mem(kupl_shm_xpmem_packed_params_t params,
 
     auto iter = g_remote_caches.find(xapid);
     if (iter != g_remote_caches.end()) {
-        remote_region = kupl_shm_xpmem_get_remote_region(
-            iter->second, xapid, params.remote_addr, params.length);
+        remote_region = kupl_shm_xpmem_get_remote_region(iter->second, xapid, params.remote_addr, params.length);
         if (remote_region.attach_pg_aligned_addr == nullptr) {
             return KUPL_ERROR;
         }
@@ -186,8 +182,8 @@ static int kupl_shm_xpmem_get_trans_mem(kupl_shm_xpmem_packed_params_t params,
             std::pair<kupl_shm_xpmem_apid_t, kupl_shm_xpmem_remote_regions_t>{xapid, remote_regions});
     }
 
-    remote_trans_mem_p->attach_addr = ((uint8_t *)remote_region.attach_pg_aligned_addr) +
-        (params.remote_addr - remote_region.start);
+    remote_trans_mem_p->attach_addr =
+        ((uint8_t *)remote_region.attach_pg_aligned_addr) + (params.remote_addr - remote_region.start);
     remote_trans_mem_p->length = params.length;
 
     return KUPL_OK;
@@ -202,8 +198,8 @@ static int kupl_shm_xpmem_allgather_addr(size_t size, void *baseptr, kupl_shm_wi
     kupl_shm_xpmem_remote_trans_mem_t remote_trans_mem;
     int ret;
 
-    packed_params_list = (kupl_shm_xpmem_packed_params_t *)kupl_malloc_inner(
-        sizeof(kupl_shm_xpmem_packed_params_t) * numprocs);
+    packed_params_list =
+        (kupl_shm_xpmem_packed_params_t *)kupl_malloc_inner(sizeof(kupl_shm_xpmem_packed_params_t) * numprocs);
     if (packed_params_list == nullptr) {
         return KUPL_ERROR;
     }
@@ -266,8 +262,7 @@ int kupl_shm_xpmem_finalize()
     return kupl_shm_xpmem_remove_global_xsegid();
 }
 
-static kupl_always_inline
-int kupl_shm_xpmem_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_xpmem_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_insert_after(&comm->win_list, &win->list);
@@ -275,8 +270,7 @@ int kupl_shm_xpmem_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_xpmem_win_del(kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_xpmem_win_del(kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_del(&win->list);
@@ -285,7 +279,7 @@ int kupl_shm_xpmem_win_del(kupl_shm_win_h win, int flag)
 }
 
 int kupl_shm_xpmem_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag,
-    size_t *offset_list)
+                             size_t *offset_list)
 {
     int ret;
     kupl_shm_win_h win_temp;
@@ -349,13 +343,11 @@ int kupl_shm_xpmem_win_query(kupl_shm_win_h win, int remote_rank, void **baseptr
     return KUPL_OK;
 }
 
-static const kupl_shm_ops_t g_kupl_shm_xpmem_ops = {
-    .init               = kupl_shm_xpmem_init,
-    .finalize           = kupl_shm_xpmem_finalize,
-    .shm_win_alloc      = kupl_shm_xpmem_win_alloc,
-    .shm_win_free       = kupl_shm_xpmem_win_free,
-    .shm_win_query      = kupl_shm_xpmem_win_query
-};
+static const kupl_shm_ops_t g_kupl_shm_xpmem_ops = {.init = kupl_shm_xpmem_init,
+                                                    .finalize = kupl_shm_xpmem_finalize,
+                                                    .shm_win_alloc = kupl_shm_xpmem_win_alloc,
+                                                    .shm_win_free = kupl_shm_xpmem_win_free,
+                                                    .shm_win_query = kupl_shm_xpmem_win_query};
 
 void kupl_shm_xpmem_reg_ops()
 {

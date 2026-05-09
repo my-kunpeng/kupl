@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#define KUPL_SHM_COMM_MAX_SIZE   1024
+#define KUPL_SHM_COMM_MAX_SIZE 1024
 
 typedef enum kupl_shm_coll_type {
     KUPL_SHM_COLL_TYPE_BCAST = 0,

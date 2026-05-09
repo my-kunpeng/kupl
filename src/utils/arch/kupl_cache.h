@@ -22,13 +22,13 @@
 extern "C" {
 #endif
 
-#define KUPL_CACHE_LINE        KUPL_ARCH_CACHE_LINE
+#define KUPL_CACHE_LINE KUPL_ARCH_CACHE_LINE
 
-#define KUPL_ALIGN(bytes)      __attribute__((aligned(bytes)))
-#define KUPL_ALIGN_CACHE       KUPL_ALIGN(KUPL_CACHE_LINE)
+#define KUPL_ALIGN(bytes) __attribute__((aligned(bytes)))
+#define KUPL_ALIGN_CACHE KUPL_ALIGN(KUPL_CACHE_LINE)
 
-#define KUPL_PAD(type, sz)     (sizeof(type) + ((sz) - ((sizeof(type) - 1) % (sz)) - 1))
-#define KUPL_PAD_CACHE(type)   KUPL_PAD(type, KUPL_CACHE_LINE)
+#define KUPL_PAD(type, sz) (sizeof(type) + ((sz) - ((sizeof(type) - 1) % (sz)) - 1))
+#define KUPL_PAD_CACHE(type) KUPL_PAD(type, KUPL_CACHE_LINE)
 
 #ifdef __cplusplus
 }

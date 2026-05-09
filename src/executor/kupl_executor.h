@@ -22,8 +22,8 @@
 extern "C" {
 #endif
 
-#define KUPL_EXECUTOR_DEFAULT          (-1)
-#define KUPL_EXECUTOR_MAX_SCHED        64
+#define KUPL_EXECUTOR_DEFAULT (-1)
+#define KUPL_EXECUTOR_MAX_SCHED 64
 
 static const int KUPL_EXECUTOR_MAX_QUERY_COUNT = 100;
 
@@ -54,7 +54,7 @@ typedef union KUPL_ALIGN_CACHE kupl_executor {
  *
  * @return the executor thread.
  */
-kupl_executor_t* kupl_executor_get_current_executor(void);
+kupl_executor_t *kupl_executor_get_current_executor(void);
 
 /**
  * @brief set the current tb of the executor thread.
@@ -68,11 +68,11 @@ void kupl_executor_set_current_tb(kupl_taskbase_t *tb);
  *
  * @return tb               the current tb is working on the executor thread
  */
-kupl_taskbase_t* kupl_executor_get_current_tb(void);
+kupl_taskbase_t *kupl_executor_get_current_tb(void);
 
 int kupl_executor_get_master_core_id(void);
 
-cpu_set_t* kupl_get_global_executor_set(void);
+cpu_set_t *kupl_get_global_executor_set(void);
 
 /**
  * @brief Initialize the executor module

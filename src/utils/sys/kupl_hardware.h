@@ -72,7 +72,7 @@ void kupl_host_info_fini(void);
 /**
  * @brief get the hardware topology information, @note must call @ref kupl_host_info_init() firstly
  */
-const kupl_host_info_t* kupl_get_host_info(void);
+const kupl_host_info_t *kupl_get_host_info(void);
 
 #define kupl_get_numa_distance(_info, _i, _j) (_info)->numa_distance[(_i) * (_info)->numa_cnt + (_j)]
 

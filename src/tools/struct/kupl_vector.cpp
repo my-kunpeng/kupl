@@ -11,7 +11,7 @@
  */
 #include "kupl_vector.h"
 
-kupl_vector_t* kupl_vector_create(size_t capacity, size_t elem_size, const char *name)
+kupl_vector_t *kupl_vector_create(size_t capacity, size_t elem_size, const char *name)
 {
     if (kupl_unlikely(elem_size == 0)) {
         kupl_error("illegitimate vector elem size");
@@ -36,7 +36,7 @@ kupl_vector_t* kupl_vector_create(size_t capacity, size_t elem_size, const char 
     vector->tail = 0;
     vector->capacity = actual_capacity;
     vector->elem_size = elem_size;
-    vector->data = vector + 1;  /* because we alloc vector meta and data together */
+    vector->data = vector + 1; /* because we alloc vector meta and data together */
 
     return vector;
 }

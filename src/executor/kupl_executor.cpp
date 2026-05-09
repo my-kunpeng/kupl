@@ -63,13 +63,12 @@ typedef struct kupl_cv_mutex {
 
 static kupl_cv_mutex_t *g_executor_cv = nullptr;
 
-
 int kupl_executor_get_master_core_id()
 {
     return g_executor_master_core_id;
 }
 
-kupl_executor_t* kupl_executor_get_current_executor()
+kupl_executor_t *kupl_executor_get_current_executor()
 {
     int eid = kupl_get_global_executor_id();
     if (kupl_unlikely(eid == KUPL_EXECUTOR_DEFAULT || eid >= g_executor_count)) {
@@ -87,7 +86,7 @@ void kupl_executor_set_current_tb(kupl_taskbase_t *tb)
     g_executors[eid].exe.current_tb = tb;
 }
 
-kupl_taskbase_t* kupl_executor_get_current_tb()
+kupl_taskbase_t *kupl_executor_get_current_tb()
 {
     int eid = kupl_get_global_executor_id();
     if (kupl_unlikely(eid == KUPL_EXECUTOR_DEFAULT || eid >= g_executor_count)) {
@@ -112,7 +111,6 @@ kupl_ult_h kupl_executor_get_pf_ult()
     }
     return g_executors[eid].exe.ult;
 }
-
 
 int kupl_get_num_executors()
 {
@@ -181,7 +179,7 @@ int kupl_get_executor_num()
     return eid;
 }
 
-cpu_set_t* kupl_get_global_executor_set()
+cpu_set_t *kupl_get_global_executor_set()
 {
     if (kupl_is_expand_executor()) {
         return &g_executor_set_expand;
@@ -271,7 +269,7 @@ void kupl_executor_fini()
     }
 
     if (g_executor_cv != nullptr) {
-        delete [] g_executor_cv;
+        delete[] g_executor_cv;
         g_executor_cv = nullptr;
     }
 
@@ -362,7 +360,7 @@ void kupl_set_kernel_concurrency(int num)
     }
     if (num < 1 || num > kupl_get_num_executors()) {
         kupl_warn("number of threads out of the 1..kupl_get_num_executors() range,"
-                   " so set the number to kupl_get_num_executors().");
+                  " so set the number to kupl_get_num_executors().");
         g_kernel_concurrency = kupl_get_num_executors();
         return;
     }
@@ -390,7 +388,7 @@ void kupl_set_kernel_concurrency_local(int num)
     }
     if (num < 1 || num > kupl_get_num_executors()) {
         kupl_warn("number of threads out of the 1..kupl_get_num_executors() range,"
-                   " so set the number to kupl_get_num_executors().");
+                  " so set the number to kupl_get_num_executors().");
         g_kernel_concurrency_local = kupl_get_num_executors();
         return;
     }

@@ -43,24 +43,24 @@ typedef struct sdma_sqe_task {
     uint32_t dst_stride_len;
     uint32_t stride_num;
     uint32_t length;
-    uint8_t  opcode;
-    uint8_t  mpam_partid;
-    uint8_t  pmg : 2;
-    uint8_t  resvd1 : 6;
-    uint8_t  qos : 4;
-    uint8_t  resvd2 : 4;
+    uint8_t opcode;
+    uint8_t mpam_partid;
+    uint8_t pmg : 2;
+    uint8_t resvd1 : 6;
+    uint8_t qos : 4;
+    uint8_t resvd2 : 4;
     sdma_task_callback task_cb;
     void *task_data;
     struct sdma_sqe_task *next_sqe;
 } sdma_sqe_task_t;
 
 typedef struct sdma_request {
-    uint16_t	req_id;
-    uint32_t	req_cnt;
-    uint32_t	round_cnt;
+    uint16_t req_id;
+    uint32_t req_cnt;
+    uint32_t round_cnt;
 } sdma_request_t;
 
-typedef void* (*init_chn_sdma)(int, int);
+typedef void *(*init_chn_sdma)(int, int);
 
 typedef int (*get_process_id_sdma)(int, uint32_t *);
 
@@ -87,7 +87,7 @@ typedef struct sdma_func_list {
     unpin_umem_sdma kupl_sdma_unpin_umem;
 } sdma_func_list_t;
 
-typedef void* kupl_sdma_chn_h;
+typedef void *kupl_sdma_chn_h;
 extern kupl_sdma_chn_h g_sdma_chns[KUPL_MAX_SDMA_CHN_SIZE];
 extern int g_sdma_fd[KUPL_MAX_SDMA_DEVICE_SIZE];
 extern std::atomic<int> g_sdma_chn_num[KUPL_MAX_SDMA_DEVICE_SIZE];

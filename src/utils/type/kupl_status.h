@@ -17,10 +17,10 @@ extern "C" {
 #endif
 
 /** @brief status in kupl library */
-#define KUPL_OK            0
-#define KUPL_ERROR         (-1)
-#define KUPL_AGAIN         (-2)
-#define KUPL_FINISHED      (-3)
+#define KUPL_OK 0
+#define KUPL_ERROR (-1)
+#define KUPL_AGAIN (-2)
+#define KUPL_FINISHED (-3)
 
 #ifdef __cplusplus
 }

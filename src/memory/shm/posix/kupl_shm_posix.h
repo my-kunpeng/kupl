@@ -18,10 +18,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define KBYTE    (1uLL << 10)
-#define MBYTE    (1uLL << 20)
-#define GBYTE    (1uLL << 30)
-#define TBYTE    (1uLL << 40)
+#define KBYTE (1uLL << 10)
+#define MBYTE (1uLL << 20)
+#define GBYTE (1uLL << 30)
+#define TBYTE (1uLL << 40)
 #define KUPL_SHM_MMAP_PATH_MAX 64
 #define KUPL_SHM_MMAP_FILE_FMT "/shm_mmap_%" PRIx64 "_%" PRIu64 "_%" PRId32
 #define KUPL_SHM_MMAP_CREATE_FLAGS (O_CREAT | O_EXCL | O_RDWR)
@@ -30,12 +30,12 @@ extern "C" {
 #define KUPL_SHM_MMAP_PROT (PROT_READ | PROT_WRITE)
 #define KUPL_SHM_MMAP_FLAGS (MAP_SHARED)
 
-#define kupl_shm_min(_a, _b) \
-({ \
-    __typeof__(_a) _min_a = (_a); \
-    __typeof__(_b) _min_b = (_b); \
-    (_min_a < _min_b) ? _min_a : _min_b; \
-})
+#define kupl_shm_min(_a, _b)                 \
+    ({                                       \
+        __typeof__(_a) _min_a = (_a);        \
+        __typeof__(_b) _min_b = (_b);        \
+        (_min_a < _min_b) ? _min_a : _min_b; \
+    })
 
 typedef struct kupl_shm_info_posix_args {
     kupl_shm_base_info super;

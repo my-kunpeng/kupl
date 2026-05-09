@@ -17,14 +17,14 @@
 #include <map>
 #include "kupl_task.h"
 
-typedef std::map<uint64_t, kupl_task*> kupl_node_task_map_t;
+typedef std::map<uint64_t, kupl_task *> kupl_node_task_map_t;
 
 typedef struct kupl_sgraph {
-    struct kupl_graph       *graph;     // specifies which dynamic graph to add
-    kupl_node_task_map_t    *src_nodes; // stores nodes with no dependency
-    kupl_slist_t            *nodes;     // stores all node resources in the static graph
-    uint32_t                task_id;    // stores the key of src_nodes
-    KUPL_ATOMIC_UINT32      task_count; // indicates the number of tasks that have not been executed.
+    struct kupl_graph *graph;        // specifies which dynamic graph to add
+    kupl_node_task_map_t *src_nodes; // stores nodes with no dependency
+    kupl_slist_t *nodes;             // stores all node resources in the static graph
+    uint32_t task_id;                // stores the key of src_nodes
+    KUPL_ATOMIC_UINT32 task_count;   // indicates the number of tasks that have not been executed.
 } kupl_sgraph_t;
 
 void kupl_sgraph_task_body(void *args);

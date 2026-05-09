@@ -84,8 +84,7 @@ void kupl_task_cleanup(kupl_task_h task)
     KUPL_PTRACE_END(KUPL_PTRACE_TASK_CLEANUP);
 }
 
-static kupl_always_inline
-bool kupl_task_execute(kupl_task_t *task)
+static kupl_always_inline bool kupl_task_execute(kupl_task_t *task)
 {
     bool finished = false;
 
@@ -98,8 +97,7 @@ bool kupl_task_execute(kupl_task_t *task)
     return finished;
 }
 
-static kupl_always_inline
-kupl_task_h kupl_task_finish(kupl_task_h task)
+static kupl_always_inline kupl_task_h kupl_task_finish(kupl_task_h task)
 {
     kupl_task_t *next_task = nullptr;
 
@@ -203,10 +201,10 @@ int kupl_task_wait(kupl_task_h task)
 
 namespace kupl {
 
-    void lambda_func(void *args)
-    {
-        auto data = (lambda_func_data *)args;
-        data->func();
-    }
-
+void lambda_func(void *args)
+{
+    auto data = (lambda_func_data *)args;
+    data->func();
 }
+
+} // namespace kupl

@@ -124,8 +124,7 @@ void kupl_egroup_reset(kupl_egroup_t *egroup)
     memcpy(&egroup->cur, &egroup->def, sizeof(egroup->cur));
 }
 
-static kupl_always_inline
-int kupl_egroup_add(kupl_egroup_t *dest, kupl_egroup_t *src)
+static kupl_always_inline int kupl_egroup_add(kupl_egroup_t *dest, kupl_egroup_t *src)
 {
     kupl_egroup_info_t &dest_info = dest->cur;
     kupl_egroup_info_t &src_info = src->cur;
@@ -193,8 +192,7 @@ int kupl_egroup_return(kupl_egroup_h dest, kupl_egroup_h src)
     return ret;
 }
 
-static kupl_always_inline
-uint32_t kupl_egroup_get_local_id(kupl_egroup_h group)
+static kupl_always_inline uint32_t kupl_egroup_get_local_id(kupl_egroup_h group)
 {
     int eid = kupl_get_executor_num();
     if (kupl_unlikely(eid == KUPL_EXECUTOR_DEFAULT)) {

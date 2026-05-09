@@ -12,9 +12,7 @@
 #ifndef KUPL_SHM_XPMEM_ADAPTER_H
 #define KUPL_SHM_XPMEM_ADAPTER_H
 
-extern "C" {
-    #include "xpmem.h"
-}
+#include "xpmem.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +25,6 @@ typedef struct kupl_shm_xpmem_addr {
     kupl_shm_xpmem_apid_t apid;
     off_t offset;
 } kupl_shm_xpmem_addr_t;
-
 
 /**
  * @brief get the XPMEM version
@@ -64,8 +61,7 @@ int kupl_shm_xpmem_remove(kupl_shm_xpmem_segid_t segid);
  * @param [in] permit_value         permissions mode expressed as an octal value
  * @return kupl_shm_xpmem_segid_t  make result, 64-bit segment ID for success, -1 for error
  */
-kupl_shm_xpmem_apid_t kupl_shm_xpmem_get(kupl_shm_xpmem_segid_t segid,
-    int flags, int permit_type, void *permit_value);
+kupl_shm_xpmem_apid_t kupl_shm_xpmem_get(kupl_shm_xpmem_segid_t segid, int flags, int permit_type, void *permit_value);
 
 /**
  * @brief give up access to the segment

@@ -14,8 +14,8 @@
 #include "utils/config/kupl_config.h"
 
 typedef struct kupl_barrier_dist {
-    barrier_volatile_t      *enter;
-    barrier_volatile_t      *leave;
+    barrier_volatile_t *enter;
+    barrier_volatile_t *leave;
 } kupl_barrier_dist_t;
 
 static int kupl_barrier_dist_create(kupl_barrier_h barrier)

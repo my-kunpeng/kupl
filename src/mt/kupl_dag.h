@@ -32,15 +32,14 @@ typedef struct kupl_gnode {
         kupl_slist_t *head;
         kupl_slist_t *tail;
     } successors;
-    uint32_t            n_successors;
-    uint32_t            n_hard_predecessors;
-    uint32_t            n_soft_predecessors;
+    uint32_t n_successors;
+    uint32_t n_hard_predecessors;
+    uint32_t n_soft_predecessors;
     KUPL_ATOMIC_UINT32 n_predecessors;
-    kupl_lock_t        *lock;
+    kupl_lock_t *lock;
 } kupl_gnode_t;
 
-static kupl_always_inline
-int kupl_gnode_init(kupl_gnode_t& gnode)
+static kupl_always_inline int kupl_gnode_init(kupl_gnode_t &gnode)
 {
     gnode.successors.head = nullptr;
     gnode.successors.tail = nullptr;
@@ -55,8 +54,7 @@ int kupl_gnode_init(kupl_gnode_t& gnode)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-void kupl_gnode_cleanup(kupl_gnode_t& gnode, int geid)
+static kupl_always_inline void kupl_gnode_cleanup(kupl_gnode_t &gnode, int geid)
 {
     kupl_lock_cleanup(gnode.lock);
     gnode.lock = nullptr;
@@ -79,29 +77,30 @@ uint32_t kupl_gnode_release_ready_safe(kupl_gnode_t *gnode, kupl_task_t **ready_
 #define KUPL_MAX_LOCAL_DEP_COUNT 128
 #define KUPL_DAG_TASK_READY 1
 #define KUPL_DAG_TASK_NOT_READY 0
-#define KUPL_TASK_DEP_ALL_ADDR (void*)ULONG_MAX
+#define KUPL_TASK_DEP_ALL_ADDR (void *)ULONG_MAX
 
 typedef struct kupl_addr_entry {
-    kupl_gnode_t        *out;       // data write
-    kupl_slist_t        *in;        // data read
+    kupl_gnode_t *out; // data write
+    kupl_slist_t *in;  // data read
 } kupl_addr_entry_t;
 
-kupl_addr_entry_t* kupl_addr_entry_create(int geid);
+kupl_addr_entry_t *kupl_addr_entry_create(int geid);
 
 void kupl_addr_entry_destroy(kupl_addr_entry_t *entry, int geid);
 
-typedef std::unordered_map<const void*, kupl_addr_entry_t*> kupl_dag_hash_t;
+typedef std::unordered_map<const void *, kupl_addr_entry_t *> kupl_dag_hash_t;
 
 typedef struct kupl_dag {
-    kupl_dag_hash_t     *hash; // store all addr, for trans in/out to node/dep
-    pthread_spinlock_t  lock;
+    kupl_dag_hash_t *hash; // store all addr, for trans in/out to node/dep
+    pthread_spinlock_t lock;
 } kupl_dag_t;
 
-kupl_dag_t* kupl_dag_create(int geid);
+kupl_dag_t *kupl_dag_create(int geid);
 
-void kupl_dag_destroy(kupl_dag_t* dag, int geid);
+void kupl_dag_destroy(kupl_dag_t *dag, int geid);
 
-int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_dep_list, uint32_t task_dep_cnt, int geid);
+int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_dep_list, uint32_t task_dep_cnt,
+                      int geid);
 
 #ifdef __cplusplus
 }

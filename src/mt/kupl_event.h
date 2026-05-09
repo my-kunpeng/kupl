@@ -36,21 +36,21 @@ typedef struct kupl_sdma_request {
     kupl_event_h event;
 } kupl_sdma_request_t;
 
-typedef struct kupl_sdma_request* kupl_sdma_request_h;
+typedef struct kupl_sdma_request *kupl_sdma_request_h;
 
 typedef struct kupl_event {
-    kupl_task_h             task;
-    kupl_task_func_t        func;
-    void                    *args;
-    kupl_queue_h            q;
-    kupl_graph_h            graph;
-    kupl_event_h            wait;
-    kupl_event_type_t       type;
-    kupl_sdma_request_h     req;
-    kupl_lock_t             *lock;
-    KUPL_ATOMIC_INT         status;
-    KUPL_ATOMIC_INT         ref;
-    void                    *m_args;    // args used for memcpy
+    kupl_task_h task;
+    kupl_task_func_t func;
+    void *args;
+    kupl_queue_h q;
+    kupl_graph_h graph;
+    kupl_event_h wait;
+    kupl_event_type_t type;
+    kupl_sdma_request_h req;
+    kupl_lock_t *lock;
+    KUPL_ATOMIC_INT status;
+    KUPL_ATOMIC_INT ref;
+    void *m_args; // args used for memcpy
     std::vector<kupl_queue_h> *q_set;
 } kupl_event_t;
 

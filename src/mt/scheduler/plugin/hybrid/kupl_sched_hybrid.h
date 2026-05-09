@@ -18,11 +18,11 @@
 extern "C" {
 #endif
 
-#define KUPL_SCHED_PLUGIN_HYBRID_NAME       "hybrid"
-#define KUPL_SCHED_PLUGINS_NUM               2
-#define KUPL_SCHED_PLUGIN_HYBRID_SCORE       (0)
+#define KUPL_SCHED_PLUGIN_HYBRID_NAME "hybrid"
+#define KUPL_SCHED_PLUGINS_NUM 2
+#define KUPL_SCHED_PLUGIN_HYBRID_SCORE (0)
 
-const kupl_sched_plugin_api_t* kupl_sched_hybrid_get_instance();
+const kupl_sched_plugin_api_t *kupl_sched_hybrid_get_instance();
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,6 @@
 #include "utils/sys/kupl_hardware.h"
 #include "executor/backend/kupl_executor_backend.h"
 
-
 static bool isopen_sdma_dl = false;
 static kupl_dl_module_t *g_kupl_sdma_module = nullptr;
 static sdma_func_list_t sdma_dl_func_l;
@@ -41,11 +40,9 @@ bool open_kupl_sdma_dl_module()
         return false;
     }
 
-    std::string sdma_func_name[SDMA_FUNC_NUM] = {
-        "sdma_init_chn", "sdma_get_process_id", "sdma_deinit_chn",
-        "sdma_icopy_data", "sdma_iwait_chn", "sdma_iquery_chn",
-        "sdma_pin_umem", "sdma_unpin_umem"
-    };
+    std::string sdma_func_name[SDMA_FUNC_NUM] = {"sdma_init_chn",   "sdma_get_process_id", "sdma_deinit_chn",
+                                                 "sdma_icopy_data", "sdma_iwait_chn",      "sdma_iquery_chn",
+                                                 "sdma_pin_umem",   "sdma_unpin_umem"};
 
     kupl_dl_module_sym_t sdma_reg_ops[SDMA_FUNC_NUM];
     for (int i = 0; i < SDMA_FUNC_NUM; i++) {
@@ -79,9 +76,9 @@ bool kupl_sdma_func_init()
         return false;
     }
     if (sdma_dl_func_l.kupl_sdma_init_chn && sdma_dl_func_l.kupl_sdma_get_process_id &&
-        sdma_dl_func_l.kupl_sdma_deinit_chn && sdma_dl_func_l.kupl_sdma_icopy_data && sdma_dl_func_l.kupl_sdma_iwait_chn
-        && sdma_dl_func_l.kupl_sdma_iquery_chn && sdma_dl_func_l.kupl_sdma_pin_umem &&
-        sdma_dl_func_l.kupl_sdma_unpin_umem) {
+        sdma_dl_func_l.kupl_sdma_deinit_chn && sdma_dl_func_l.kupl_sdma_icopy_data &&
+        sdma_dl_func_l.kupl_sdma_iwait_chn && sdma_dl_func_l.kupl_sdma_iquery_chn &&
+        sdma_dl_func_l.kupl_sdma_pin_umem && sdma_dl_func_l.kupl_sdma_unpin_umem) {
         return true;
     } else {
         return false;
@@ -142,7 +139,7 @@ int kupl_sdma_dev_init()
             break;
         }
         g_sdma_chns[g_sdma_chn_num[fd_index] + i] =
-        sdma_dl_func_l.kupl_sdma_init_chn(g_sdma_fd[fd_index], (g_sdma_chn_num[fd_index] + i) % cores_per_sdma);
+            sdma_dl_func_l.kupl_sdma_init_chn(g_sdma_fd[fd_index], (g_sdma_chn_num[fd_index] + i) % cores_per_sdma);
         if (g_sdma_chns[g_sdma_chn_num[fd_index] + i] == nullptr) {
             return kupl_log_error_return(WARN, "creat sdma channl failed");
         }

@@ -98,40 +98,40 @@ static void get_env_str(struct kupl_config_kv *cfg)
 
 void kupl_config_load()
 {
-    /** initialize all the configures with default value and read from environment */
-    #define KUPL_CONFIG_INT(_env, _def, _lower, _upper, _doc)                                  \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].type = KUPL_CONFIG_TYPE_INT;    \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].name = # _env;                   \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].doc = _doc;                      \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.value = _def;            \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.def_value = _def;        \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.upper = _upper;          \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.lower = _lower;          \
-            get_env_int(&g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)]);
+/** initialize all the configures with default value and read from environment */
+#define KUPL_CONFIG_INT(_env, _def, _lower, _upper, _doc)                         \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].type = KUPL_CONFIG_TYPE_INT; \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].name = #_env;                \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].doc = _doc;                  \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.value = _def;        \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.def_value = _def;    \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.upper = _upper;      \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.lower = _lower;      \
+    get_env_int(&g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)]);
 
-    #define KUPL_CONFIG_STR(_env, _def, _doc)                                                  \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].type = KUPL_CONFIG_TYPE_STR;    \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].name = # _env;                   \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].doc = _doc;                      \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.value = _def;            \
-            g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.def_value = _def;        \
-            get_env_str(&g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)]);
+#define KUPL_CONFIG_STR(_env, _def, _doc)                                         \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].type = KUPL_CONFIG_TYPE_STR; \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].name = #_env;                \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].doc = _doc;                  \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.value = _def;        \
+    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.def_value = _def;    \
+    get_env_str(&g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)]);
 
-    #include "kupl_config_var.inc"
-    #undef KUPL_CONFIG_INT
-    #undef KUPL_CONFIG_STR
+#include "kupl_config_var.inc"
+#undef KUPL_CONFIG_INT
+#undef KUPL_CONFIG_STR
 
     /* print all configures */
     if (kupl_config_get_value(KUPL_ENABLE_VERBOSE)) {
-        #define KUPL_CONFIG_INT(_env, ...) printf("%s=%d\n",   \
-                                                    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].name,    \
-                                                    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.value);
-        #define KUPL_CONFIG_STR(_env, ...) printf("%s=%s\n",   \
-                                                    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].name,    \
-                                                    g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.value);
-        #include "kupl_config_var.inc"
-        #undef KUPL_CONFIG_INT
-        #undef KUPL_CONFIG_STR
+#define KUPL_CONFIG_INT(_env, ...)                                           \
+    printf("%s=%d\n", g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].name, \
+           g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, INT)].cfg_int.value);
+#define KUPL_CONFIG_STR(_env, ...)                                           \
+    printf("%s=%s\n", g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].name, \
+           g_kupl_config_kv[KUPL_CONFIG_TO_ENUM(_env, STR)].cfg_str.value);
+#include "kupl_config_var.inc"
+#undef KUPL_CONFIG_INT
+#undef KUPL_CONFIG_STR
     }
 }
 

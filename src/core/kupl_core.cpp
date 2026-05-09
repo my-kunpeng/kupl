@@ -52,8 +52,7 @@ int kupl_get_version(kupl_version_t *version)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_dm_module_init()
+static kupl_always_inline int kupl_dm_module_init()
 {
     if (kupl_unlikely(kupl_memcpy_init() != KUPL_OK)) {
         return KUPL_ERROR;
@@ -61,15 +60,12 @@ int kupl_dm_module_init()
     return KUPL_OK;
 }
 
-static kupl_always_inline
-void kupl_dm_module_fini()
+static kupl_always_inline void kupl_dm_module_fini()
 {
     kupl_memcpy_fini();
 }
 
-
-static kupl_always_inline
-int kupl_memory_module_init()
+static kupl_always_inline int kupl_memory_module_init()
 {
     if (!g_mpool_inited && kupl_mpool_init() == KUPL_ERROR) {
         goto err_mpool_init;
@@ -81,14 +77,12 @@ err_mpool_init:
     return KUPL_ERROR;
 }
 
-static kupl_always_inline
-void kupl_memory_module_fini()
+static kupl_always_inline void kupl_memory_module_fini()
 {
     kupl_mpool_fini();
 }
 
-static kupl_always_inline
-int kupl_mt_module_init()
+static kupl_always_inline int kupl_mt_module_init()
 {
     if (kupl_unlikely(kupl_sched_init() != KUPL_OK)) {
         goto err_sched_init;
@@ -106,15 +100,13 @@ err_sched_init:
     return KUPL_ERROR;
 }
 
-static kupl_always_inline
-void kupl_mt_module_fini()
+static kupl_always_inline void kupl_mt_module_fini()
 {
     kupl_sched_fini();
     kupl_queue_fini();
 }
 
-static kupl_always_inline
-int kupl_executor_module_init()
+static kupl_always_inline int kupl_executor_module_init()
 {
     if (kupl_unlikely(kupl_executor_init() != KUPL_OK)) {
         goto err_executor_init;
@@ -133,8 +125,7 @@ err_executor_init:
     return KUPL_ERROR;
 }
 
-static kupl_always_inline
-void kupl_executor_module_fini()
+static kupl_always_inline void kupl_executor_module_fini()
 {
     kupl_executor_stop();
     kupl_executor_fini();

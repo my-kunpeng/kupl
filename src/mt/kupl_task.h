@@ -21,33 +21,32 @@ extern "C" {
 #endif
 
 enum kupl_task_kind_t {
-    KUPL_TASK_KIND_UNKNOW          = 0,
+    KUPL_TASK_KIND_UNKNOW = 0,
 
-    KUPL_TASK_KIND_COMM_DYNAMIC    = kupl_bit(0),
-    KUPL_TASK_KIND_DYNAMIC_MASK    = kupl_bit(10) - 1,
+    KUPL_TASK_KIND_COMM_DYNAMIC = kupl_bit(0),
+    KUPL_TASK_KIND_DYNAMIC_MASK = kupl_bit(10) - 1,
 
-    KUPL_TASK_KIND_COMM_STATIC     = kupl_bit(10),
-    KUPL_TASK_KIND_STATIC_MASK     = kupl_bit(20) - kupl_bit(10)
+    KUPL_TASK_KIND_COMM_STATIC = kupl_bit(10),
+    KUPL_TASK_KIND_STATIC_MASK = kupl_bit(20) - kupl_bit(10)
 };
 
 typedef struct kupl_task {
-    kupl_taskbase_t    tb;
-    kupl_task_kind_t   kind;
-    kupl_gnode_t       gnode;
-    char               udata[];
+    kupl_taskbase_t tb;
+    kupl_task_kind_t kind;
+    kupl_gnode_t gnode;
+    char udata[];
 } kupl_task_t;
 
 typedef struct kupl_task_param {
-    kupl_tb_param_t     super;
-    kupl_task_kind_t    kind;
-    kupl_task_t         *inplace;
-    size_t              udata_size;
+    kupl_tb_param_t super;
+    kupl_task_kind_t kind;
+    kupl_task_t *inplace;
+    size_t udata_size;
 } kupl_task_param_t;
 
 kupl_task_h kupl_task_init(kupl_task_param_t *param, int geid);
 
-static kupl_always_inline
-void kupl_task_ref(kupl_taskbase_t *tb)
+static kupl_always_inline void kupl_task_ref(kupl_taskbase_t *tb)
 {
     if (kupl_unlikely(tb == nullptr)) {
         return;
@@ -55,8 +54,7 @@ void kupl_task_ref(kupl_taskbase_t *tb)
     KUPL_ATOMIC_ADD_RLX(&tb->ref, 1);
 }
 
-static kupl_always_inline
-void kupl_task_deref(kupl_taskbase_t *tb, int geid)
+static kupl_always_inline void kupl_task_deref(kupl_taskbase_t *tb, int geid)
 {
     if (kupl_unlikely(tb == nullptr)) {
         return;
@@ -75,14 +73,9 @@ void kupl_task_deref(kupl_taskbase_t *tb, int geid)
 
 int kupl_task_invoke(kupl_taskbase_t *tb);
 
-static const kupl_tb_ops_t task_ops = {
-    .ref    = kupl_task_ref,
-    .deref  = kupl_task_deref,
-    .invoke = kupl_task_invoke
-};
+static const kupl_tb_ops_t task_ops = {.ref = kupl_task_ref, .deref = kupl_task_deref, .invoke = kupl_task_invoke};
 
-static kupl_always_inline
-bool kupl_static_task_check(kupl_taskbase_t *tb)
+static kupl_always_inline bool kupl_static_task_check(kupl_taskbase_t *tb)
 {
     return ((tb->type & KUPL_TB_TYPE_TASK) && (((kupl_task_h)tb)->kind & KUPL_TASK_KIND_STATIC_MASK));
 }
@@ -103,14 +96,14 @@ int kupl_task_wait(kupl_task_h task);
 
 namespace kupl {
 
-    using lambda_func_type = std::function<void(void)>;
-    struct lambda_func_data {
-        lambda_func_type       func;
-    };
+using lambda_func_type = std::function<void(void)>;
+struct lambda_func_data {
+    lambda_func_type func;
+};
 
-    void lambda_func(void *args);
+void lambda_func(void *args);
 
-}
+} // namespace kupl
 
 #endif
 

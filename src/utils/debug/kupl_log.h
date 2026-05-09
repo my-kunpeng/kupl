@@ -22,8 +22,8 @@ extern "C" {
 
 /* log function */
 #define KUPL_LOG_DEBUG 0
-#define KUPL_LOG_INFO  1
-#define KUPL_LOG_WARN  2
+#define KUPL_LOG_INFO 1
+#define KUPL_LOG_WARN 2
 #define KUPL_LOG_ERROR 3
 #define KUPL_LOG_FATAL 4
 
@@ -31,29 +31,25 @@ extern "C" {
 #ifdef ENABLE_KUPL_DEBUG
 #define KUPL_MIN_LOG_LEVEL KUPL_LOG_DEBUG
 #else
-#define KUPL_MIN_LOG_LEVEL  KUPL_LOG_INFO
+#define KUPL_MIN_LOG_LEVEL KUPL_LOG_INFO
 #endif
 #endif
 
 #define kupl_trace(_msg, args...)
-#define kupl_log_level(_level, _msg, args...)                                                                        \
+#define kupl_log_level(_level, _msg, args...)                                                                    \
     if (KUPL_LOG_##_level >= KUPL_MIN_LOG_LEVEL && KUPL_LOG_##_level >= kupl_config_get_value(KUPL_LOG_LEVEL)) { \
-        printf("[%s %s():%d] " _msg "\n", #_level, __FUNCTION__, __LINE__, ##args);                                   \
+        printf("[%s %s():%d] " _msg "\n", #_level, __FUNCTION__, __LINE__, ##args);                              \
     }
-#define kupl_debug(args...)                 kupl_log_level(DEBUG, args)
-#define kupl_info(args...)                  kupl_log_level(INFO, args)
-#define kupl_warn(args...)                  kupl_log_level(WARN, args)
-#define kupl_error(args...)                 kupl_log_level(ERROR, args)
-#define kupl_fatal(args...)         \
-do {                                \
-    kupl_log_level(FATAL, args);    \
-} while (0)
+#define kupl_debug(args...) kupl_log_level(DEBUG, args)
+#define kupl_info(args...) kupl_log_level(INFO, args)
+#define kupl_warn(args...) kupl_log_level(WARN, args)
+#define kupl_error(args...) kupl_log_level(ERROR, args)
+#define kupl_fatal(args...)          \
+    do {                             \
+        kupl_log_level(FATAL, args); \
+    } while (0)
 
-#define kupl_log_error_return(level, args...)       \
-({                                                  \
-    kupl_log_level(level, args)                     \
-    KUPL_ERROR;                                     \
-})
+#define kupl_log_error_return(level, args...) ({ kupl_log_level(level, args) KUPL_ERROR; })
 
 #ifdef __cplusplus
 }

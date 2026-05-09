@@ -29,16 +29,16 @@ extern "C" {
 #define KUPL_RESERVE_SIZE 128
 
 typedef struct kupl_queue {
-    kupl_event_h        event;              /* events of the enqueued commands in enqueue order */
-    unsigned long       event_count;        /* counter for unfinished event */
-    kupl_event_h        last_event;
-    kupl_lock_t         *lock;
-    int                 priority;
-    void                *sdma_chn;
+    kupl_event_h event;        /* events of the enqueued commands in enqueue order */
+    unsigned long event_count; /* counter for unfinished event */
+    kupl_event_h last_event;
+    kupl_lock_t *lock;
+    int priority;
+    void *sdma_chn;
     std::vector<kupl_sdma_request_h> *req_set;
-    int                 index;
-    bool                acquire;
-    bool                sync;
+    int index;
+    bool acquire;
+    bool sync;
 } kupl_queue_t;
 
 void kupl_enqueue_event(kupl_queue_h queue, kupl_event_h event);
@@ -47,8 +47,7 @@ void kupl_dequeue_event(kupl_queue_h queue, kupl_event_h event);
 
 kupl_egroup_h kupl_queue_acquire_egroup(kupl_queue_h queue);
 
-kupl_always_inline
-bool kupl_queue_is_sync(kupl_queue_h queue)
+kupl_always_inline bool kupl_queue_is_sync(kupl_queue_h queue)
 {
     return queue->sync;
 }

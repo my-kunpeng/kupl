@@ -469,8 +469,8 @@ int kupl_shm_comm_destroy(kupl_shm_comm_h comm)
 }
 
 static kupl_always_inline int kupl_shm_allreduce_param_check(const void *sendbuf, void *recvbuf, int count,
-                                                              kupl_shm_reduce_op_t op, kupl_shm_comm_h comm,
-                                                              kupl_shm_request_h *request)
+                                                             kupl_shm_reduce_op_t op, kupl_shm_comm_h comm,
+                                                             kupl_shm_request_h *request)
 {
     if (count <= 0) {
         return kupl_log_error_return(ERROR, "invalid count");
@@ -535,7 +535,7 @@ int kupl_shm_allreduce_init(const void *sendbuf, void *recvbuf, int count, kupl_
 }
 
 static kupl_always_inline int kupl_shm_bcast_param_check(void *buffer, int count, int root, kupl_shm_comm_h comm,
-                                                          kupl_shm_request_h *request)
+                                                         kupl_shm_request_h *request)
 {
     if (count <= 0) {
         return kupl_log_error_return(ERROR, "count can not less than or equal 0!");
@@ -570,16 +570,16 @@ static kupl_always_inline void kupl_shm_bcast_fill_request(void *buffer, int cou
     }
 }
 
-static kupl_always_inline
-int kupl_shm_bcast_request_args_set(void *buffer, int count, kupl_shm_datatype datatype, int root, kupl_shm_comm_h comm,
-                             kupl_shm_request_h *request)
+static kupl_always_inline int kupl_shm_bcast_request_args_set(void *buffer, int count, kupl_shm_datatype datatype,
+                                                              int root, kupl_shm_comm_h comm,
+                                                              kupl_shm_request_h *request)
 {
     void *notify_root_buffer;
     void *notify_others_buffer;
     void *p2p_buffer;
 
     int ret = kupl_shm_win_alloc((size_t)comm->size * sizeof(int), comm, &notify_root_buffer,
-                             &((*request)->args.wins_t.bcast.notify_root_win));
+                                 &((*request)->args.wins_t.bcast.notify_root_win));
     if (ret == KUPL_ERROR) {
         goto err;
     }

@@ -21,14 +21,14 @@
 #include "utils/sys/kupl_dl_module.h"
 #include "utils/sys/kupl_glibc_version.h"
 
-#define KUPL_SCHED_PLUGIN_DEFAULT      (-1)
-#define KUPL_MAX_SCHED_PLUGIN_LOADED   128
+#define KUPL_SCHED_PLUGIN_DEFAULT (-1)
+#define KUPL_MAX_SCHED_PLUGIN_LOADED 128
 
 typedef struct kupl_sched_plugin_info {
     int plugin_count;
     int best_score_idx;
-    kupl_dl_module_t* modules[KUPL_MAX_SCHED_PLUGIN_LOADED];
-    const kupl_sched_plugin_api_t* plugins[KUPL_MAX_SCHED_PLUGIN_LOADED];
+    kupl_dl_module_t *modules[KUPL_MAX_SCHED_PLUGIN_LOADED];
+    const kupl_sched_plugin_api_t *plugins[KUPL_MAX_SCHED_PLUGIN_LOADED];
     kupl_sched_plugin_property_t properties[KUPL_MAX_SCHED_PLUGIN_LOADED];
 } kupl_sched_plugin_info_t;
 
@@ -56,7 +56,7 @@ static int kupl_sched_plugin_load_builtin(const std::string &plugin_name)
     }
 
     int now_plugin_idx = g_info->plugin_count;
-    g_info->modules[now_plugin_idx] = nullptr;   /* builtin don't use dlopen */
+    g_info->modules[now_plugin_idx] = nullptr; /* builtin don't use dlopen */
     g_info->plugins[now_plugin_idx] = plugin;
     g_info->properties[now_plugin_idx] = property;
 
@@ -133,8 +133,7 @@ void kupl_sched_plugin_unload()
     g_info = nullptr;
 }
 
-int kupl_sched_plugin_find(const char *plugin_name,
-                           kupl_sched_plugin_api_t *plugin,
+int kupl_sched_plugin_find(const char *plugin_name, kupl_sched_plugin_api_t *plugin,
                            kupl_sched_plugin_property_t *plugin_property)
 {
     if (g_info == nullptr || g_info->best_score_idx < 0) {

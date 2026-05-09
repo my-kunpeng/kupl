@@ -38,10 +38,10 @@ static int kupl_omp_get_global_executor_id()
 void kupl_set_omp_executor_ops(kupl_executor_ops_t &ops)
 {
     ops = {
-        .init               = nullptr,
-        .fini               = nullptr,
-        .set_affinity       = nullptr,
-        .set_geid           = kupl_omp_set_global_executor_id,
-        .get_geid           = kupl_omp_get_global_executor_id,
+        .init = nullptr,
+        .fini = nullptr,
+        .set_affinity = nullptr,
+        .set_geid = kupl_omp_set_global_executor_id,
+        .get_geid = kupl_omp_get_global_executor_id,
     };
 }

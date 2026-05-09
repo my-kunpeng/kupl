@@ -15,9 +15,9 @@
 #include <stdio.h>
 
 typedef enum {
-    IO_NONE       = 0,
-    IO_ATTACH     = 1,
-    IO_DUMP       = 3,
+    IO_NONE = 0,
+    IO_ATTACH = 1,
+    IO_DUMP = 3,
     IO_MAX
 } IOCTL_NUMBER;
 
@@ -36,8 +36,7 @@ struct dax_ioctl_mmap {
 };
 typedef struct dax_ioctl_mmap dax_ioctl_mmap_t;
 
-long attach(int fd, unsigned long src_addr, unsigned long dst_addr,
-            int src_pid, int dst_pid, unsigned long size)
+long attach(int fd, unsigned long src_addr, unsigned long dst_addr, int src_pid, int dst_pid, unsigned long size)
 {
     dax_ioctl_pswap_t frame2 = {
         .src_addr = src_addr,

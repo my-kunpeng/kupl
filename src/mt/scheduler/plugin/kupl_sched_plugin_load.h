@@ -45,8 +45,7 @@ void kupl_sched_plugin_unload(void);
  *
  * @return  KUPL_OK for success, other for failed
  */
-int kupl_sched_plugin_find(const char *plugin_name,
-                           kupl_sched_plugin_api_t *plugin,
+int kupl_sched_plugin_find(const char *plugin_name, kupl_sched_plugin_api_t *plugin,
                            kupl_sched_plugin_property_t *plugin_property);
 
 #ifdef __cplusplus

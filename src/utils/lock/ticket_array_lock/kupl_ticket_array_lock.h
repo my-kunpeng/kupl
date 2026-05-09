@@ -28,7 +28,7 @@ typedef struct kupl_ticket_array_lock {
 } kupl_ticket_array_lock_t;
 
 typedef struct kupl_lock kupl_lock_t;
-kupl_lock_t* kupl_ticket_array_lock_init(void);
+kupl_lock_t *kupl_ticket_array_lock_init(void);
 void kupl_ticket_array_lock_fini(kupl_lock_t *lock);
 
 #endif

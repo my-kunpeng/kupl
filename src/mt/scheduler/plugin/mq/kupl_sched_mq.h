@@ -18,10 +18,10 @@
 extern "C" {
 #endif
 
-#define KUPL_SCHED_PLUGIN_MQ_NAME       "mq"
-#define KUPL_SCHED_PLUGIN_MQ_SCORE      (-1)
+#define KUPL_SCHED_PLUGIN_MQ_NAME "mq"
+#define KUPL_SCHED_PLUGIN_MQ_SCORE (-1)
 
-const kupl_sched_plugin_api_t* kupl_sched_mq_get_instance();
+const kupl_sched_plugin_api_t *kupl_sched_mq_get_instance();
 
 #ifdef __cplusplus
 }

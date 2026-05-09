@@ -30,7 +30,7 @@ typedef struct kupl_dl_module_sym {
  *
  * @return Returns the path of the current dynamic library exist path
  */
-const char* kupl_dl_get_default_path(void);
+const char *kupl_dl_get_default_path(void);
 
 /**
  * @brief Dlopen the module, and load all functions to @a funcs
@@ -41,7 +41,7 @@ const char* kupl_dl_get_default_path(void);
  *
  * @return              the handle of this libray, return NULL if error happened
  */
-kupl_dl_module_t* kupl_dl_open(const char *libpath, kupl_dl_module_sym_t *syms, int sym_count);
+kupl_dl_module_t *kupl_dl_open(const char *libpath, kupl_dl_module_sym_t *syms, int sym_count);
 
 /**
  * @brief Dlclose the module

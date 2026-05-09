@@ -23,16 +23,16 @@ extern "C" {
 #endif
 
 #if defined(__aarch64__)
-#define kupl_aarch64_dmb(_op)          asm volatile ("dmb " #_op ::: "memory")
-#define kupl_aarch64_isb(_op)          asm volatile ("isb " #_op ::: "memory")
-#define kupl_aarch64_dsb(_op)          asm volatile ("dsb " #_op ::: "memory")
+#define kupl_aarch64_dmb(_op) asm volatile("dmb " #_op ::: "memory")
+#define kupl_aarch64_isb(_op) asm volatile("isb " #_op ::: "memory")
+#define kupl_aarch64_dsb(_op) asm volatile("dsb " #_op ::: "memory")
 
-#define kupl_memory_cpu_fence()        kupl_aarch64_dmb(ish)
-#define kupl_memory_cpu_store_fence()  kupl_aarch64_dmb(ishst)
-#define kupl_memory_cpu_load_fence()   kupl_aarch64_dmb(ishld)
+#define kupl_memory_cpu_fence() kupl_aarch64_dmb(ish)
+#define kupl_memory_cpu_store_fence() kupl_aarch64_dmb(ishst)
+#define kupl_memory_cpu_load_fence() kupl_aarch64_dmb(ishld)
 #endif
 
-#define KUPL_SHM_FENCE_FLAG_WIN_SIZE    (3)
+#define KUPL_SHM_FENCE_FLAG_WIN_SIZE (3)
 
 /** @brief fence algo to select the fence algorithm */
 enum kupl_fence_algo_t {
@@ -56,10 +56,10 @@ enum kupl_fence_algo_t {
 };
 
 /** @brief the handle of kupl fence */
-typedef struct kupl_fence* kupl_fence_h;
+typedef struct kupl_fence *kupl_fence_h;
 
 typedef struct kupl_fence_ops {
-    int  (*create)(kupl_fence_h fence);
+    int (*create)(kupl_fence_h fence);
     void (*destroy)(kupl_fence_h fence);
     void (*wait)(kupl_fence_h fence, int local_tid, int local_tnum);
 } kupl_fence_ops_t;
@@ -70,14 +70,14 @@ typedef struct kupl_fence_rd_args {
 } kupl_fence_rd_args_t;
 
 typedef struct kupl_fence {
-    kupl_fence_algo_t       algo;
-    kupl_shm_win_h          local_win;
-    kupl_fence_ops_t        *ops;
-    int                     size;
-    int                     flag_idx;
-    int                     *flag_peer_idx;
-    void                    *bar;
-    kupl_shm_win_h          win;
+    kupl_fence_algo_t algo;
+    kupl_shm_win_h local_win;
+    kupl_fence_ops_t *ops;
+    int size;
+    int flag_idx;
+    int *flag_peer_idx;
+    void *bar;
+    kupl_shm_win_h win;
     union {
         kupl_fence_rd_args_t rd;
     } args;
@@ -128,13 +128,13 @@ void kupl_fence_destroy(kupl_fence_h fence);
 void kupl_fence_wait(kupl_fence_h fence, int local_tid, int local_tnum);
 
 // only use in process fence
-static kupl_always_inline
-void kupl_fence_set_flag(kupl_fence_h fence, int id, int local_num, int flag_val, int rank, int flag_idx)
+static kupl_always_inline void kupl_fence_set_flag(kupl_fence_h fence, int id, int local_num, int flag_val, int rank,
+                                                   int flag_idx)
 {
     (void)id;
     (void)local_num;
     kupl_memory_cpu_store_fence();
-    void* peer_baseptr;
+    void *peer_baseptr;
     int *flag;
     bool is_comm_fence = (fence->algo != KUPL_FENCE_ALGO_P2P);
     if (kupl_shm_win_query(fence->win, id, &peer_baseptr) == -1) {
@@ -144,23 +144,21 @@ void kupl_fence_set_flag(kupl_fence_h fence, int id, int local_num, int flag_val
 
     // offset for comm_fence
     if (is_comm_fence) {
-        peer_baseptr = reinterpret_cast<char *>(peer_baseptr)
-                        + KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * fence->size;
+        peer_baseptr =
+            reinterpret_cast<char *>(peer_baseptr) + KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * fence->size;
     }
     int factor = is_comm_fence ? 1 : fence->size;
-    flag = reinterpret_cast<int *>(reinterpret_cast<char *>(peer_baseptr)
-            + flag_idx * KUPL_CACHE_LINE * factor
-            + rank * KUPL_CACHE_LINE);
+    flag = reinterpret_cast<int *>(reinterpret_cast<char *>(peer_baseptr) + flag_idx * KUPL_CACHE_LINE * factor +
+                                   rank * KUPL_CACHE_LINE);
     *flag = flag_val;
 }
 
 // only use in process fence
-static kupl_always_inline
-int kupl_fence_get_flag(kupl_fence_h fence, int id, int local_num, int rank, int flag_idx)
+static kupl_always_inline int kupl_fence_get_flag(kupl_fence_h fence, int id, int local_num, int rank, int flag_idx)
 {
     (void)local_num;
     kupl_memory_cpu_load_fence();
-    void* peer_baseptr;
+    void *peer_baseptr;
     int *flag;
     bool is_comm_fence = (fence->algo != KUPL_FENCE_ALGO_P2P);
     if (kupl_shm_win_query(fence->win, id, &peer_baseptr) == -1) {
@@ -169,13 +167,12 @@ int kupl_fence_get_flag(kupl_fence_h fence, int id, int local_num, int rank, int
 
     // offset for comm_fence
     if (is_comm_fence) {
-        peer_baseptr = reinterpret_cast<char *>(peer_baseptr)
-                        + KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * fence->size;
+        peer_baseptr =
+            reinterpret_cast<char *>(peer_baseptr) + KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * fence->size;
     }
     int factor = is_comm_fence ? 1 : fence->size;
-    flag = reinterpret_cast<int *>(reinterpret_cast<char *>(peer_baseptr)
-            + flag_idx * KUPL_CACHE_LINE * factor
-            + rank * KUPL_CACHE_LINE);
+    flag = reinterpret_cast<int *>(reinterpret_cast<char *>(peer_baseptr) + flag_idx * KUPL_CACHE_LINE * factor +
+                                   rank * KUPL_CACHE_LINE);
     return *flag;
 }
 

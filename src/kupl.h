@@ -21,26 +21,26 @@ extern "C" {
 #endif
 
 /** @brief status in kupl library */
-#define KUPL_OK            0
-#define KUPL_ERROR         (-1)
+#define KUPL_OK 0
+#define KUPL_ERROR (-1)
 
 /** @brief exposed kupl symbol table */
-#define kupl_export        __attribute__((visibility("default")))
+#define kupl_export __attribute__((visibility("default")))
 
 /** @brief the handle of kupl task */
-typedef struct kupl_task* kupl_task_h;
+typedef struct kupl_task *kupl_task_h;
 /** @brief the handle of kupl graph */
-typedef struct kupl_graph* kupl_graph_h;
+typedef struct kupl_graph *kupl_graph_h;
 /** @brief the handle of kupl sgraph (short of static graph) */
-typedef struct kupl_sgraph* kupl_sgraph_h;
+typedef struct kupl_sgraph *kupl_sgraph_h;
 /** @brief the handle of kupl egroup (short of executor group) */
-typedef struct kupl_egroup* kupl_egroup_h;
+typedef struct kupl_egroup *kupl_egroup_h;
 /** @brief the handle of kupl static graph node */
-typedef struct kupl_sgraph_node* kupl_sgraph_node_h;
+typedef struct kupl_sgraph_node *kupl_sgraph_node_h;
 /** @brief the handle of kupl queue */
-typedef struct kupl_queue* kupl_queue_h;
+typedef struct kupl_queue *kupl_queue_h;
 /** @brief the handle of kupl event */
-typedef struct kupl_event* kupl_event_h;
+typedef struct kupl_event *kupl_event_h;
 
 /** @brief kupl version info */
 typedef struct kupl_version {
@@ -60,20 +60,20 @@ typedef struct kupl_version {
  */
 kupl_export int kupl_get_version(kupl_version_t *version);
 
-#define KUPL_MAX_DIM_SIZE  3
+#define KUPL_MAX_DIM_SIZE 3
 #define KUPL_CONCURRENCY_DEFAULT (-1)
-#define KUPL_BLOCKSIZE_DEFAULT   0
-#define KUPL_ASYNC_SYNC        (-1)
+#define KUPL_BLOCKSIZE_DEFAULT 0
+#define KUPL_ASYNC_SYNC (-1)
 
 typedef struct kupl_range {
-    int64_t lower;                          /**< Pointer to loop lower bound in ult structure */
-    int64_t upper;                          /**< Pointer to loop upper bound in ult structure */
-    int64_t step;                           /**< the stride of this range, for normal range step = 1 */
-    int64_t blocksize;                      /**< the blocksize of this range, default blocksize = 1 */
+    int64_t lower;     /**< Pointer to loop lower bound in ult structure */
+    int64_t upper;     /**< Pointer to loop upper bound in ult structure */
+    int64_t step;      /**< the stride of this range, for normal range step = 1 */
+    int64_t blocksize; /**< the blocksize of this range, default blocksize = 1 */
 } kupl_range_t;
 
 typedef struct kupl_nd_range {
-    int dim;                            /**< the dimension of this range,
+    int dim; /**< the dimension of this range,
                                         the max dimension depends on KUPL_MAX_DIM_SIZE */
     kupl_range_t nd_range[KUPL_MAX_DIM_SIZE];
 } kupl_nd_range_t;
@@ -81,87 +81,85 @@ typedef struct kupl_nd_range {
 /**
  * @brief MACRO to init ranges/stride ranges
  */
-#define KUPL_1D_RANGE_INIT(_range, _col_begin, _col_end)                                        \
-do {                                                                                            \
-    (_range).dim = 1;                                                                           \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = 1;                                                              \
-    (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-} while (0)
+#define KUPL_1D_RANGE_INIT(_range, _col_begin, _col_end)         \
+    do {                                                         \
+        (_range).dim = 1;                                        \
+        (_range).nd_range[0].lower = _col_begin;                 \
+        (_range).nd_range[0].upper = _col_end;                   \
+        (_range).nd_range[0].step = 1;                           \
+        (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT; \
+    } while (0)
 
-#define KUPL_STRIDE_1D_RANGE_INIT(_range, _col_begin, _col_end, _col_step, _col_blocksize)      \
-do {                                                                                            \
-    (_range).dim = 1;                                                                           \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = _col_step;                                                      \
-    (_range).nd_range[0].blocksize = _col_blocksize;                                            \
-} while (0)
+#define KUPL_STRIDE_1D_RANGE_INIT(_range, _col_begin, _col_end, _col_step, _col_blocksize) \
+    do {                                                                                   \
+        (_range).dim = 1;                                                                  \
+        (_range).nd_range[0].lower = _col_begin;                                           \
+        (_range).nd_range[0].upper = _col_end;                                             \
+        (_range).nd_range[0].step = _col_step;                                             \
+        (_range).nd_range[0].blocksize = _col_blocksize;                                   \
+    } while (0)
 
-#define KUPL_2D_RANGE_INIT(_range, _row_begin, _row_end, _col_begin, _col_end)                  \
-do {                                                                                            \
-    (_range).dim = 2;                                                                           \
-    (_range).nd_range[1].lower = _row_begin;                                                    \
-    (_range).nd_range[1].upper = _row_end;                                                      \
-    (_range).nd_range[1].step = 1;                                                              \
-    (_range).nd_range[1].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = 1;                                                              \
-    (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-} while (0)
+#define KUPL_2D_RANGE_INIT(_range, _row_begin, _row_end, _col_begin, _col_end) \
+    do {                                                                       \
+        (_range).dim = 2;                                                      \
+        (_range).nd_range[1].lower = _row_begin;                               \
+        (_range).nd_range[1].upper = _row_end;                                 \
+        (_range).nd_range[1].step = 1;                                         \
+        (_range).nd_range[1].blocksize = KUPL_BLOCKSIZE_DEFAULT;               \
+        (_range).nd_range[0].lower = _col_begin;                               \
+        (_range).nd_range[0].upper = _col_end;                                 \
+        (_range).nd_range[0].step = 1;                                         \
+        (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT;               \
+    } while (0)
 
-#define KUPL_STRIDE_2D_RANGE_INIT(_range, _row_begin, _row_end, _row_step, _row_blocksize,      \
-                                  _col_begin, _col_end, _col_step, _col_blocksize)              \
-do {                                                                                            \
-    (_range).dim = 2;                                                                           \
-    (_range).nd_range[1].lower = _row_begin;                                                    \
-    (_range).nd_range[1].upper = _row_end;                                                      \
-    (_range).nd_range[1].step = _row_step;                                                      \
-    (_range).nd_range[1].blocksize = _row_blocksize;                                            \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = _col_step;                                                      \
-    (_range).nd_range[0].blocksize = _col_blocksize;                                            \
-} while (0)
+#define KUPL_STRIDE_2D_RANGE_INIT(_range, _row_begin, _row_end, _row_step, _row_blocksize, _col_begin, _col_end, \
+                                  _col_step, _col_blocksize)                                                     \
+    do {                                                                                                         \
+        (_range).dim = 2;                                                                                        \
+        (_range).nd_range[1].lower = _row_begin;                                                                 \
+        (_range).nd_range[1].upper = _row_end;                                                                   \
+        (_range).nd_range[1].step = _row_step;                                                                   \
+        (_range).nd_range[1].blocksize = _row_blocksize;                                                         \
+        (_range).nd_range[0].lower = _col_begin;                                                                 \
+        (_range).nd_range[0].upper = _col_end;                                                                   \
+        (_range).nd_range[0].step = _col_step;                                                                   \
+        (_range).nd_range[0].blocksize = _col_blocksize;                                                         \
+    } while (0)
 
-#define KUPL_3D_RANGE_INIT(_range, _page_begin, _page_end, _row_begin, _row_end,                \
-                           _col_begin, _col_end)                                                \
-do {                                                                                            \
-    (_range).dim = 3;                                                                           \
-    (_range).nd_range[2].lower = _page_begin;                                                   \
-    (_range).nd_range[2].upper = _page_end;                                                     \
-    (_range).nd_range[2].step = 1;                                                              \
-    (_range).nd_range[2].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-    (_range).nd_range[1].lower = _row_begin;                                                    \
-    (_range).nd_range[1].upper = _row_end;                                                      \
-    (_range).nd_range[1].step = 1;                                                              \
-    (_range).nd_range[1].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = 1;                                                              \
-    (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                    \
-} while (0)
+#define KUPL_3D_RANGE_INIT(_range, _page_begin, _page_end, _row_begin, _row_end, _col_begin, _col_end) \
+    do {                                                                                               \
+        (_range).dim = 3;                                                                              \
+        (_range).nd_range[2].lower = _page_begin;                                                      \
+        (_range).nd_range[2].upper = _page_end;                                                        \
+        (_range).nd_range[2].step = 1;                                                                 \
+        (_range).nd_range[2].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                       \
+        (_range).nd_range[1].lower = _row_begin;                                                       \
+        (_range).nd_range[1].upper = _row_end;                                                         \
+        (_range).nd_range[1].step = 1;                                                                 \
+        (_range).nd_range[1].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                       \
+        (_range).nd_range[0].lower = _col_begin;                                                       \
+        (_range).nd_range[0].upper = _col_end;                                                         \
+        (_range).nd_range[0].step = 1;                                                                 \
+        (_range).nd_range[0].blocksize = KUPL_BLOCKSIZE_DEFAULT;                                       \
+    } while (0)
 
-#define KUPL_STRIDE_3D_RANGE_INIT(_range, _page_begin, _page_end, _page_step, _page_blocksize,  \
-                                  _row_begin, _row_end, _row_step, _row_blocksize,              \
-                                  _col_begin, _col_end, _col_step, _col_blocksize)              \
-do {                                                                                            \
-    (_range).dim = 3;                                                                           \
-    (_range).nd_range[2].lower = _page_begin;                                                   \
-    (_range).nd_range[2].upper = _page_end;                                                     \
-    (_range).nd_range[2].step = _page_step;                                                     \
-    (_range).nd_range[2].blocksize = _page_blocksize;                                           \
-    (_range).nd_range[1].lower = _row_begin;                                                    \
-    (_range).nd_range[1].upper = _row_end;                                                      \
-    (_range).nd_range[1].step = _row_step;                                                      \
-    (_range).nd_range[1].blocksize = _row_blocksize;                                            \
-    (_range).nd_range[0].lower = _col_begin;                                                    \
-    (_range).nd_range[0].upper = _col_end;                                                      \
-    (_range).nd_range[0].step = _col_step;                                                      \
-    (_range).nd_range[0].blocksize = _col_blocksize;                                            \
-} while (0)
+#define KUPL_STRIDE_3D_RANGE_INIT(_range, _page_begin, _page_end, _page_step, _page_blocksize, _row_begin, _row_end, \
+                                  _row_step, _row_blocksize, _col_begin, _col_end, _col_step, _col_blocksize)        \
+    do {                                                                                                             \
+        (_range).dim = 3;                                                                                            \
+        (_range).nd_range[2].lower = _page_begin;                                                                    \
+        (_range).nd_range[2].upper = _page_end;                                                                      \
+        (_range).nd_range[2].step = _page_step;                                                                      \
+        (_range).nd_range[2].blocksize = _page_blocksize;                                                            \
+        (_range).nd_range[1].lower = _row_begin;                                                                     \
+        (_range).nd_range[1].upper = _row_end;                                                                       \
+        (_range).nd_range[1].step = _row_step;                                                                       \
+        (_range).nd_range[1].blocksize = _row_blocksize;                                                             \
+        (_range).nd_range[0].lower = _col_begin;                                                                     \
+        (_range).nd_range[0].upper = _col_end;                                                                       \
+        (_range).nd_range[0].step = _col_step;                                                                       \
+        (_range).nd_range[0].blocksize = _col_blocksize;                                                             \
+    } while (0)
 
 #define KUPL_ALL_EXECUTORS nullptr
 
@@ -181,14 +179,14 @@ typedef enum kupl_reduce_op {
 } kupl_reduce_op_t;
 
 typedef struct kupl_reduce_item {
-    void                *buffer;
-    kupl_datatype_t     type;
-    kupl_reduce_op_t    op;
+    void *buffer;
+    kupl_datatype_t type;
+    kupl_reduce_op_t op;
 } kupl_reduce_item_t;
 
 typedef struct kupl_reduce_args {
-    int                 num;
-    kupl_reduce_item_t  *items;
+    int num;
+    kupl_reduce_item_t *items;
 } kupl_reduce_args_t;
 
 /**
@@ -220,41 +218,41 @@ enum kupl_task_flag {
     /**
      * Notify task will be execute immediately
      */
-    KUPL_TASK_FLAG_IMM             = 1uL << 0,
+    KUPL_TASK_FLAG_IMM = 1uL << 0,
 };
 
 /** @brief The @ref kupl_task_desc_t-struct field mask */
 enum kupl_task_desc_field {
-    KUPL_TASK_DESC_FIELD_NAME      = 1uL << 0,   /**< enable kupl_task_desc.name member */
-    KUPL_TASK_DESC_FIELD_PRIORITY  = 1uL << 1,   /**< enable kupl_task_desc.priority member */
-    KUPL_TASK_DESC_FIELD_FLAG      = 1uL << 2,   /**< enable kupl_task_desc.flag member */
-    KUPL_TASK_DESC_FIELD_DEP       = 1uL << 3,   /**< enable kupl_task_desc.dep_list & ndep member */
+    KUPL_TASK_DESC_FIELD_NAME = 1uL << 0,     /**< enable kupl_task_desc.name member */
+    KUPL_TASK_DESC_FIELD_PRIORITY = 1uL << 1, /**< enable kupl_task_desc.priority member */
+    KUPL_TASK_DESC_FIELD_FLAG = 1uL << 2,     /**< enable kupl_task_desc.flag member */
+    KUPL_TASK_DESC_FIELD_DEP = 1uL << 3,      /**< enable kupl_task_desc.dep_list & ndep member */
 };
 
 typedef void (*kupl_task_func_t)(void *args);
 
 typedef enum kupl_task_dep_type {
-    KUPL_TASK_DEP_TYPE_IN        = 0x1,  /**< IN for read depend */
-    KUPL_TASK_DEP_TYPE_OUT       = 0x2,  /**< OUT for write depend */
-    KUPL_TASK_DEP_TYPE_INOUT     = 0x3,  /**< INOUT for read and write depend */
-    KUPL_TASK_DEP_TYPE_ALL       = 0x80, /**< depend ALL task before */
+    KUPL_TASK_DEP_TYPE_IN = 0x1,    /**< IN for read depend */
+    KUPL_TASK_DEP_TYPE_OUT = 0x2,   /**< OUT for write depend */
+    KUPL_TASK_DEP_TYPE_INOUT = 0x3, /**< INOUT for read and write depend */
+    KUPL_TASK_DEP_TYPE_ALL = 0x80,  /**< depend ALL task before */
 } kupl_task_dep_type_t;
 
 typedef struct kupl_task_dep {
-    const void*             base_addr;      /**< the address of this depend */
-    kupl_task_dep_type_t    type;           /**< the type of this depend */
+    const void *base_addr;     /**< the address of this depend */
+    kupl_task_dep_type_t type; /**< the type of this depend */
 } kupl_task_dep_t;
 
 /** @brief the description of kupl task */
 typedef struct kupl_task_desc {
-    uint64_t            field_mask;     /**< the field mask of kupl_task_desc, @ref kupl_task_desc_field */
-    kupl_task_func_t    func;           /**< the task func */
-    void                *args;          /**< the arguments of func */
-    const char          *name;          /**< the task name */
-    int                 priority;       /**< the task priority, the bigger number will get a higher priority */
-    size_t              ndep;           /**< the number of depend */
-    kupl_task_dep_t*    dep_list;       /**< the list of depend */
-    uint32_t            flag;           /**< the task flag, @ref enum kupl_task_flag */
+    uint64_t field_mask;       /**< the field mask of kupl_task_desc, @ref kupl_task_desc_field */
+    kupl_task_func_t func;     /**< the task func */
+    void *args;                /**< the arguments of func */
+    const char *name;          /**< the task name */
+    int priority;              /**< the task priority, the bigger number will get a higher priority */
+    size_t ndep;               /**< the number of depend */
+    kupl_task_dep_t *dep_list; /**< the list of depend */
+    uint32_t flag;             /**< the task flag, @ref enum kupl_task_flag */
 } kupl_task_desc_t;
 
 /** @brief the flag for sgraph_task */
@@ -262,40 +260,39 @@ enum kupl_sgraph_task_flag {
     /**
      * Notify sgraph_task will be execute immediately
      */
-    KUPL_SGRAPH_TASK_FLAG_IMM             = 1uL << 0,
+    KUPL_SGRAPH_TASK_FLAG_IMM = 1uL << 0,
 };
 
 /** @brief The @ref kupl_sgraph_task_desc_t-struct field mask */
 enum kupl_sgraph_task_desc_field {
-    KUPL_SGRAPH_TASK_DESC_FIELD_NAME      = 1uL << 0,   /**< enable kupl_sgraph_task_desc.name member */
-    KUPL_SGRAPH_TASK_DESC_FIELD_PRIORITY  = 1uL << 1,   /**< enable kupl_sgraph_task_desc.priority member */
-    KUPL_SGRAPH_TASK_DESC_FIELD_FLAG      = 1uL << 2,   /**< enable kupl_sgraph_task_desc.flag member */
+    KUPL_SGRAPH_TASK_DESC_FIELD_NAME = 1uL << 0,     /**< enable kupl_sgraph_task_desc.name member */
+    KUPL_SGRAPH_TASK_DESC_FIELD_PRIORITY = 1uL << 1, /**< enable kupl_sgraph_task_desc.priority member */
+    KUPL_SGRAPH_TASK_DESC_FIELD_FLAG = 1uL << 2,     /**< enable kupl_sgraph_task_desc.flag member */
 };
 
 typedef struct kupl_sgraph_task_desc {
-    uint64_t                field_mask;     /**< the field mask of kupl_sgraph_task_desc,
+    uint64_t field_mask;  /**< the field mask of kupl_sgraph_task_desc,
                                                  @ref kupl_sgraph_task_desc_field */
-    kupl_sgraph_h           sgraph;         /**< The static graph which will be executed. */
-    const char              *name;          /**< the sgraph task name */
-    int                     priority;       /**< the task priority, the bigger number will get a higher priority */
-    uint32_t                flag;           /**< the task flag, @ref enum kupl_sgraph_task_flag */
+    kupl_sgraph_h sgraph; /**< The static graph which will be executed. */
+    const char *name;     /**< the sgraph task name */
+    int priority;         /**< the task priority, the bigger number will get a higher priority */
+    uint32_t flag;        /**< the task flag, @ref enum kupl_sgraph_task_flag */
 } kupl_sgraph_task_desc_t;
 
 typedef void (*kupl_taskloop_func_t)(kupl_nd_range_t *nd_range, void *args);
 
 enum kupl_taskloop_desc_field {
-    KUPL_TASKLOOP_DESC_FIELD_RANGE          = 1uL << 0,   /**< enable kupl_taskloop_desc.range member */
-    KUPL_TASKLOOP_DESC_FIELD_EGROUP         = 1uL << 1,   /**< enable kupl_taskloop_desc.egroup member */
-    KUPL_TASKLOOP_DESC_FIELD_DEFAULT        = KUPL_TASKLOOP_DESC_FIELD_RANGE |
-                                              KUPL_TASKLOOP_DESC_FIELD_EGROUP,
+    KUPL_TASKLOOP_DESC_FIELD_RANGE = 1uL << 0,  /**< enable kupl_taskloop_desc.range member */
+    KUPL_TASKLOOP_DESC_FIELD_EGROUP = 1uL << 1, /**< enable kupl_taskloop_desc.egroup member */
+    KUPL_TASKLOOP_DESC_FIELD_DEFAULT = KUPL_TASKLOOP_DESC_FIELD_RANGE | KUPL_TASKLOOP_DESC_FIELD_EGROUP,
 };
 
 typedef struct kupl_taskloop_desc {
-    uint64_t                field_mask;     /**< the field mask of kupl_taskloop_desc, @ref kupl_taskloop_desc_field */
-    kupl_taskloop_func_t    func;           /**< the taskloop func */
-    void                    *args;          /**< the arguments of func */
-    kupl_nd_range_t         *range;         /**< the taskloop range */
-    kupl_egroup_h           egroup;         /**< the taskloop egroup */
+    uint64_t field_mask;       /**< the field mask of kupl_taskloop_desc, @ref kupl_taskloop_desc_field */
+    kupl_taskloop_func_t func; /**< the taskloop func */
+    void *args;                /**< the arguments of func */
+    kupl_nd_range_t *range;    /**< the taskloop range */
+    kupl_egroup_h egroup;      /**< the taskloop egroup */
 } kupl_taskloop_desc_t;
 
 typedef enum kupl_task_type {
@@ -306,8 +303,8 @@ typedef enum kupl_task_type {
 
 /** @brief the information of kupl task */
 typedef struct kupl_task_info {
-    kupl_task_type_t    type;
-    void                *desc;
+    kupl_task_type_t type;
+    void *desc;
 } kupl_task_info_t;
 
 /**
@@ -325,28 +322,28 @@ enum kupl_sgraph_node_flag {
     /**
      * Notify sgraph node will be execute immediately
      */
-    KUPL_SGRAPH_NODE_FLAG_IMM             = 1uL << 0,
+    KUPL_SGRAPH_NODE_FLAG_IMM = 1uL << 0,
 };
 
 /** @brief The @ref kupl_sgraph_node_desc_t-struct field mask */
 enum kupl_sgraph_node_desc_field {
-    KUPL_SGRAPH_NODE_DESC_FIELD_NAME         = 1uL << 0,   /**< enable kupl_sgraph_node_desc.name member */
-    KUPL_SGRAPH_NODE_DESC_FIELD_PRIORITY     = 1uL << 1,   /**< enable kupl_sgraph_node_desc.priority member */
-    KUPL_SGRAPH_NODE_DESC_FIELD_FLAG         = 1uL << 2,   /**< enable kupl_sgraph_node_desc.flag member */
-    KUPL_SGRAPH_NODE_DESC_FIELD_EGROUP       = 1uL << 3,   /**< enable kupl_sgraph_node_desc.egroup member */
+    KUPL_SGRAPH_NODE_DESC_FIELD_NAME = 1uL << 0,     /**< enable kupl_sgraph_node_desc.name member */
+    KUPL_SGRAPH_NODE_DESC_FIELD_PRIORITY = 1uL << 1, /**< enable kupl_sgraph_node_desc.priority member */
+    KUPL_SGRAPH_NODE_DESC_FIELD_FLAG = 1uL << 2,     /**< enable kupl_sgraph_node_desc.flag member */
+    KUPL_SGRAPH_NODE_DESC_FIELD_EGROUP = 1uL << 3,   /**< enable kupl_sgraph_node_desc.egroup member */
 };
 
 typedef void (*kupl_sgraph_node_func_t)(void *args);
 
 /** @brief the description of kupl sgraph node */
 typedef struct kupl_sgraph_node_desc {
-    uint64_t                field_mask; /**< Mask fields of kupl_sgraph_node_desc, @ref kupl_sgraph_node_desc_field */
-    kupl_sgraph_node_func_t func;       /**< the static graph node func */
-    void                    *args;      /**< the arguments of func */
-    const char              *name;      /**< the node name */
-    int                     priority;   /**< the priority of this node, the bigger number will get a higher priority */
-    uint32_t                flag;       /**< the flag of this node, @ref enum kupl_sgraph_node_flag */
-    kupl_egroup_h           egroup;
+    uint64_t field_mask;          /**< Mask fields of kupl_sgraph_node_desc, @ref kupl_sgraph_node_desc_field */
+    kupl_sgraph_node_func_t func; /**< the static graph node func */
+    void *args;                   /**< the arguments of func */
+    const char *name;             /**< the node name */
+    int priority;                 /**< the priority of this node, the bigger number will get a higher priority */
+    uint32_t flag;                /**< the flag of this node, @ref enum kupl_sgraph_node_flag */
+    kupl_egroup_h egroup;
 } kupl_sgraph_node_desc_t;
 
 /**
@@ -461,13 +458,13 @@ kupl_export void kupl_egroup_join_barrier(kupl_egroup_h egroup);
 kupl_export void kupl_egroup_reset(kupl_egroup_h egroup);
 
 typedef enum kupl_loop_policy_type {
-    KUPL_LOOP_POLICY_STATIC,   /**< policy that means
+    KUPL_LOOP_POLICY_STATIC,  /**< policy that means
                                     the elements in each segment could be executed in parallel,
                                     the ult spilted in static */
-    KUPL_LOOP_POLICY_DYNAMIC,  /**< policy that means
+    KUPL_LOOP_POLICY_DYNAMIC, /**< policy that means
                                     the elements in each segment could be executed in parallel,
                                     the ult spilted in dynamic */
-    KUPL_LOOP_POLICY_TASK      /**< policy that means
+    KUPL_LOOP_POLICY_TASK     /**< policy that means
                                     the elements in each segment could be executed in parallel,
                                     elements splited will be submiited as tasks */
 } kupl_loop_policy_type_t;
@@ -483,22 +480,21 @@ typedef enum kupl_loop_policy_type {
 typedef void (*kupl_pf_func_t)(kupl_nd_range_t *nd_range, void *args, int tid, int tnum);
 
 enum kupl_parallel_for_desc_field {
-    KUPL_PARALLEL_FOR_DESC_FIELD_RANGE          = 1uL << 0,   /**< enable kupl_parallel_for_desc.range member */
-    KUPL_PARALLEL_FOR_DESC_FIELD_EGROUP         = 1uL << 1,   /**< enable kupl_parallel_for_desc.egroup member */
-    KUPL_PARALLEL_FOR_DESC_FIELD_CONCURRENCY    = 1uL << 2,   /**< enable kupl_parallel_for_desc.concurrency member */
-    KUPL_PARALLEL_FOR_DESC_FIELD_POLICY         = 1uL << 3,   /**< enable kupl_parallel_for_desc.policy member */
-    KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT        = KUPL_PARALLEL_FOR_DESC_FIELD_RANGE |
-                                                  KUPL_PARALLEL_FOR_DESC_FIELD_EGROUP |
-                                                  KUPL_PARALLEL_FOR_DESC_FIELD_CONCURRENCY |
-                                                  KUPL_PARALLEL_FOR_DESC_FIELD_POLICY,
+    KUPL_PARALLEL_FOR_DESC_FIELD_RANGE = 1uL << 0,       /**< enable kupl_parallel_for_desc.range member */
+    KUPL_PARALLEL_FOR_DESC_FIELD_EGROUP = 1uL << 1,      /**< enable kupl_parallel_for_desc.egroup member */
+    KUPL_PARALLEL_FOR_DESC_FIELD_CONCURRENCY = 1uL << 2, /**< enable kupl_parallel_for_desc.concurrency member */
+    KUPL_PARALLEL_FOR_DESC_FIELD_POLICY = 1uL << 3,      /**< enable kupl_parallel_for_desc.policy member */
+    KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT = KUPL_PARALLEL_FOR_DESC_FIELD_RANGE | KUPL_PARALLEL_FOR_DESC_FIELD_EGROUP |
+                                           KUPL_PARALLEL_FOR_DESC_FIELD_CONCURRENCY |
+                                           KUPL_PARALLEL_FOR_DESC_FIELD_POLICY,
 };
 
 typedef struct kupl_parallel_for_desc {
-    uint64_t                field_mask;                 /**< @ref kupl_parallel_for_desc_field */
-    kupl_nd_range_t         *range;                     /**< range for this parallel_for */
-    kupl_egroup_h           egroup;                     /**< egroup for this parallel_for */
-    int                     concurrency;                /**< concurrency for this parallel_for */
-    kupl_loop_policy_type_t policy;                     /**< loop policy this parallel_for will use */
+    uint64_t field_mask;            /**< @ref kupl_parallel_for_desc_field */
+    kupl_nd_range_t *range;         /**< range for this parallel_for */
+    kupl_egroup_h egroup;           /**< egroup for this parallel_for */
+    int concurrency;                /**< concurrency for this parallel_for */
+    kupl_loop_policy_type_t policy; /**< loop policy this parallel_for will use */
 } kupl_parallel_for_desc_t;
 
 /**
@@ -522,7 +518,7 @@ kupl_export int kupl_parallel_for(kupl_parallel_for_desc_t *desc, kupl_pf_func_t
  * @param [in] rd_args          the args for reduce
  */
 typedef void (*kupl_pf_reduce_func_t)(kupl_nd_range_t *nd_range, void *args, int tid, int tnum,
-    kupl_reduce_args_t *rd_args);
+                                      kupl_reduce_args_t *rd_args);
 
 /**
  * @brief create a parallel for reduce structure based on the parallel for description and reduce args.
@@ -535,7 +531,7 @@ typedef void (*kupl_pf_reduce_func_t)(kupl_nd_range_t *nd_range, void *args, int
  * @return  KUPL_OK for success, other for failed.
  */
 kupl_export int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func_t func, void *args,
-    kupl_reduce_args_t *rd_args);
+                                         kupl_reduce_args_t *rd_args);
 
 /**
  * @brief set the number of threads used by kupl kernel，such as memcpy
@@ -580,7 +576,7 @@ typedef enum kupl_mem_kind {
  *
  * @return the ptr of the memory
  */
-kupl_export void* kupl_malloc(kupl_mem_kind_t kind, size_t size);
+kupl_export void *kupl_malloc(kupl_mem_kind_t kind, size_t size);
 
 /**
  * @brief Deallocates memory
@@ -598,7 +594,7 @@ kupl_export void kupl_free(kupl_mem_kind_t kind, void *ptr);
  *
  * @return the ptr of the memory
  */
-kupl_export void* kupl_hbw_malloc(size_t size);
+kupl_export void *kupl_hbw_malloc(size_t size);
 
 /**
  * @brief Deallocates memory in high bandiwidth memory
@@ -789,19 +785,19 @@ typedef void (*kupl_queue_item_func_t)(void *args);
 
 /** @brief The @ref kupl_queue_item_desc_t-struct field mask */
 enum kupl_queue_item_desc_field {
-    KUPL_QUEUE_ITEM_DESC_FIELD_NAME       = 1uL << 0,   /**< enable queue_item_desc.name member */
-    KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP     = 1uL << 1,   /**< enable queue_item_desc.egroup member */
-    KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE  = 1uL << 2,   /**< enable queue_item_desc.args_size member */
+    KUPL_QUEUE_ITEM_DESC_FIELD_NAME = 1uL << 0,      /**< enable queue_item_desc.name member */
+    KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP = 1uL << 1,    /**< enable queue_item_desc.egroup member */
+    KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE = 1uL << 2, /**< enable queue_item_desc.args_size member */
 };
 
 /** @brief the description of kupl kernel */
 typedef struct kupl_queue_item_desc {
-    uint64_t                field_mask;     /**< Mask fields of kupl_queue_item_desc, @ref kupl_queue_item_desc_field */
-    kupl_queue_item_func_t  func;           /**< the queue item func */
-    void                    *args;          /**< the arguments of func */
-    const char              *name;          /**< the kernel name */
-    kupl_egroup_h           egroup;
-    size_t                  args_size;      /**< the arguments size */
+    uint64_t field_mask;         /**< Mask fields of kupl_queue_item_desc, @ref kupl_queue_item_desc_field */
+    kupl_queue_item_func_t func; /**< the queue item func */
+    void *args;                  /**< the arguments of func */
+    const char *name;            /**< the kernel name */
+    kupl_egroup_h egroup;
+    size_t args_size; /**< the arguments size */
 } kupl_queue_item_desc_t;
 
 /**
@@ -874,9 +870,9 @@ kupl_export int kupl_event_wait(kupl_event_h event);
  */
 kupl_export int kupl_event_query(kupl_event_h event);
 
-typedef struct kupl_shm_win* kupl_shm_win_h;
-typedef struct kupl_shm_comm* kupl_shm_comm_h;
-typedef struct kupl_shm_request* kupl_shm_request_h;
+typedef struct kupl_shm_win *kupl_shm_win_h;
+typedef struct kupl_shm_comm *kupl_shm_comm_h;
+typedef struct kupl_shm_request *kupl_shm_request_h;
 
 typedef enum kupl_shm_reduce_op {
     KUPL_SHM_REDUCE_OP_MAX = 0,
@@ -936,9 +932,9 @@ kupl_export int kupl_shm_win_free(kupl_shm_win_h win);
 kupl_export int kupl_shm_win_query(kupl_shm_win_h win, int remote_rank, void **baseptr);
 
 typedef struct kupl_shm_addr {
-    void *src_addr;         /**< the src virtual addr of another process */
-    int   src_pid;          /**< the src pid of another process */
-    int   dst_pid;          /**< the pid of local process */
+    void *src_addr; /**< the src virtual addr of another process */
+    int src_pid;    /**< the src pid of another process */
+    int dst_pid;    /**< the pid of local process */
 } kupl_shm_addr_t;
 
 /**
@@ -949,7 +945,7 @@ typedef struct kupl_shm_addr {
  * @return  the dst ptr of the memory that attached to src addr
  */
 
-kupl_export void* kupl_shm_attach(kupl_shm_addr_t addr, size_t size);
+kupl_export void *kupl_shm_attach(kupl_shm_addr_t addr, size_t size);
 
 /**
  * @brief detach and free memory that attached to src_addr
@@ -957,7 +953,7 @@ kupl_export void* kupl_shm_attach(kupl_shm_addr_t addr, size_t size);
  * @param [in] ptr              The dst ptr of the memory that attached to src addr
  */
 
-kupl_export void kupl_shm_detach(void* ptr);
+kupl_export void kupl_shm_detach(void *ptr);
 
 /**
  * @brief implement inter-process barrier in win
@@ -987,8 +983,8 @@ kupl_export int kupl_shm_peer_fence(kupl_shm_win_h win, int remote_rank);
  * @param [out] comm             the created kupl comm
  * @return int                   create result, 0 for success, -1 for error
  */
-kupl_export int kupl_shm_comm_create(int size, int rank, int pid, kupl_shm_oob_cb_h oob_cbs,
-                                     void *group, kupl_shm_comm_h *comm);
+kupl_export int kupl_shm_comm_create(int size, int rank, int pid, kupl_shm_oob_cb_h oob_cbs, void *group,
+                                     kupl_shm_comm_h *comm);
 
 /**
  * @brief get kupl comm process number
@@ -1052,9 +1048,8 @@ kupl_export int kupl_shm_comm_destroy(kupl_shm_comm_h comm);
  * @param [out] request          the kupl communicator request
  * @return int                   allreduce result, 0 for success, -1 for error
  */
-kupl_export int kupl_shm_allreduce_init(const void *sendbuf, void *recvbuf, int count,
-                                        kupl_shm_datatype_t datatype, kupl_shm_reduce_op_t op,
-                                        kupl_shm_comm_h comm, kupl_shm_request_h *request);
+kupl_export int kupl_shm_allreduce_init(const void *sendbuf, void *recvbuf, int count, kupl_shm_datatype_t datatype,
+                                        kupl_shm_reduce_op_t op, kupl_shm_comm_h comm, kupl_shm_request_h *request);
 
 /**
  * @brief implement inter-process broadcast within comm
@@ -1098,14 +1093,14 @@ kupl_export int kupl_shm_info_set(kupl_info_flag_t info_flag, uint32_t value);
 
 /** @brief The @ref kupl_queue_kernel_desc_t-struct field mask */
 enum kupl_queue_kernel_desc_field {
-    KUPL_QUEUE_KERNEL_DESC_FIELD_NAME       = 1uL << 0,   /**< enable queue_kernel_desc.name member */
+    KUPL_QUEUE_KERNEL_DESC_FIELD_NAME = 1uL << 0, /**< enable queue_kernel_desc.name member */
 };
 
 typedef struct kupl_queue_kernel_desc {
-    uint64_t                field_mask;
-    kupl_nd_range_t         *range;
-    kupl_egroup_h           egroup;
-    const char              *name;
+    uint64_t field_mask;
+    kupl_nd_range_t *range;
+    kupl_egroup_h egroup;
+    const char *name;
 } kupl_queue_kernel_desc_t;
 
 #ifdef __cplusplus
@@ -1117,25 +1112,23 @@ typedef struct kupl_queue_kernel_desc {
 #include <functional>
 
 namespace kupl {
-    kupl_export int graph_submit(kupl_graph_h graph, kupl_task_desc_t *desc,
-                                 const std::function<void(void)> &func);
+kupl_export int graph_submit(kupl_graph_h graph, kupl_task_desc_t *desc, const std::function<void(void)> &func);
 
-    kupl_export int graph_submit(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
-                                 const std::function<void(const kupl_nd_range_t *)> &func);
+kupl_export int graph_submit(kupl_graph_h graph, kupl_taskloop_desc_t *desc,
+                             const std::function<void(const kupl_nd_range_t *)> &func);
 
-    kupl_export kupl_sgraph_node_h sgraph_add_node(kupl_sgraph_h sgraph, kupl_sgraph_node_desc_t *desc,
-                                                   const std::function<void(void)> &func);
+kupl_export kupl_sgraph_node_h sgraph_add_node(kupl_sgraph_h sgraph, kupl_sgraph_node_desc_t *desc,
+                                               const std::function<void(void)> &func);
 
-    kupl_export int queue_submit(kupl_queue_h queue, kupl_queue_kernel_desc_t *desc,
-                                 const std::function<void(const kupl_nd_range_t *)> &kernel);
+kupl_export int queue_submit(kupl_queue_h queue, kupl_queue_kernel_desc_t *desc,
+                             const std::function<void(const kupl_nd_range_t *)> &kernel);
 
-    kupl_export int queue_submit(kupl_queue_h queue, kupl_queue_item_desc_t *desc,
-                                 const std::function<void(void)> &func);
+kupl_export int queue_submit(kupl_queue_h queue, kupl_queue_item_desc_t *desc, const std::function<void(void)> &func);
 
-    using pf_lambda = std::function<void(const kupl_nd_range_t *nd_range, const int tid, const int tnum)>;
+using pf_lambda = std::function<void(const kupl_nd_range_t *nd_range, const int tid, const int tnum)>;
 
-    kupl_export int parallel_for(kupl_parallel_for_desc_t *desc, const pf_lambda &func);
-}
+kupl_export int parallel_for(kupl_parallel_for_desc_t *desc, const pf_lambda &func);
+} // namespace kupl
 
 #endif
 

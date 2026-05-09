@@ -21,26 +21,26 @@ extern "C" {
 #endif
 
 typedef enum kupl_ult_kind {
-    KUPL_ULT_KIND_UNKNOW         = 0,
+    KUPL_ULT_KIND_UNKNOW = 0,
 
-    KUPL_ULT_KIND_COMM_DYNAMIC   = kupl_bit(0),
-    KUPL_ULT_KIND_DYNAMIC_MASK   = kupl_bit(10) - 1
+    KUPL_ULT_KIND_COMM_DYNAMIC = kupl_bit(0),
+    KUPL_ULT_KIND_DYNAMIC_MASK = kupl_bit(10) - 1
 } kupl_ult_kind_t;
 
 typedef struct kupl_ult {
     kupl_taskbase_t tb;
     kupl_ult_kind_t kind;
-    char            udata[];
+    char udata[];
 } kupl_ult_t;
 
-typedef struct kupl_ult* kupl_ult_h;
+typedef struct kupl_ult *kupl_ult_h;
 
 typedef kupl_tb_desc_t kupl_ult_desc_t;
 
 typedef struct kupl_ult_param {
-    kupl_tb_param_t      super;
-    kupl_ult_kind_t      kind;
-    kupl_ult_t           *inplace;
+    kupl_tb_param_t super;
+    kupl_ult_kind_t kind;
+    kupl_ult_t *inplace;
 } kupl_ult_param_t;
 
 kupl_ult_h kupl_ult_init(kupl_ult_param_t *param, int geid);
@@ -75,11 +75,7 @@ void kupl_ult_cleanup(kupl_ult_h ult);
 
 int kupl_ult_invoke(kupl_taskbase_t *tb);
 
-static const kupl_tb_ops_t ult_ops = {
-    .ref    = kupl_ult_ref,
-    .deref  = kupl_ult_deref,
-    .invoke = kupl_ult_invoke
-};
+static const kupl_tb_ops_t ult_ops = {.ref = kupl_ult_ref, .deref = kupl_ult_deref, .invoke = kupl_ult_invoke};
 
 #ifdef __cplusplus
 }

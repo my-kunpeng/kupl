@@ -16,7 +16,7 @@
 #include "memory/shm/kupl_shm.h"
 #include "utils/config/kupl_config.h"
 
-#define KUPL_SHM_P2P_FENCE_MAX_SIZE      (2)
+#define KUPL_SHM_P2P_FENCE_MAX_SIZE (2)
 
 void kupl_fence_peer_destroy(kupl_fence_h fence)
 {
@@ -26,7 +26,7 @@ void kupl_fence_peer_destroy(kupl_fence_h fence)
 int kupl_fence_peer_create(kupl_fence_h fence)
 {
     auto size = static_cast<size_t>(fence->size);
-    fence->flag_peer_idx = static_cast<int*>(kupl_calloc(size, sizeof(int)));
+    fence->flag_peer_idx = static_cast<int *>(kupl_calloc(size, sizeof(int)));
     if (fence->flag_peer_idx == nullptr) {
         return KUPL_ERROR;
     }
