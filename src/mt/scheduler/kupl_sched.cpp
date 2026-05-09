@@ -95,17 +95,17 @@ void kupl_sched_fini()
     return;
 }
 
-kupl_sched_t* kupl_get_global_sched()
+kupl_sched_t *kupl_get_global_sched()
 {
     return g_sched;
 }
 
-kupl_sched_t* kupl_get_global_sched_expand()
+kupl_sched_t *kupl_get_global_sched_expand()
 {
     return g_sched_expand;
 }
 
-kupl_sched_t* kupl_sched_create(const char *plugin_name)
+kupl_sched_t *kupl_sched_create(const char *plugin_name)
 {
     kupl_sched_t *sched = (kupl_sched_t *)kupl_calloc(1, sizeof(kupl_sched_t));
     if (kupl_unlikely(sched == nullptr)) {
@@ -198,9 +198,9 @@ int kupl_sched_add_ult(kupl_sched_t *sched, kupl_ult_t *ult)
 int kupl_sched_execute_tb(kupl_sched_t *sched)
 {
     static kupl_compute_place_t cp;
-    PROFILE_CODE_COND_START(sched_get_taskbase, (tb!= nullptr));
+    PROFILE_CODE_COND_START(sched_get_taskbase, (tb != nullptr));
     kupl_taskbase_t *tb = sched->plugin.get_tb(sched->plugin_sched, cp);
-    PROFILE_CODE_COND_END(sched_get_taskbase, (tb!= nullptr));
+    PROFILE_CODE_COND_END(sched_get_taskbase, (tb != nullptr));
     if (tb == nullptr) {
         kupl_sched_yield();
         return 0;

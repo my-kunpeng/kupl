@@ -21,11 +21,9 @@ extern "C" {
 #define kupl_round_up(_x, _factor) (((_x) + (_factor) - 1) / (_factor) * (_factor))
 #define kupl_divup(a, b) (((a) + (b) - 1) / (b))
 
-#define kupl_align_down_pow2(_n, _alignment) \
-    ((_n) & ~((_alignment) - 1))
+#define kupl_align_down_pow2(_n, _alignment) ((_n) & ~((_alignment) - 1))
 
-#define kupl_align_up_pow2(_n, _alignment) \
-    kupl_align_down_pow2((_n) + (_alignment) - 1, _alignment)
+#define kupl_align_up_pow2(_n, _alignment) kupl_align_down_pow2((_n) + (_alignment) - 1, _alignment)
 
 #ifdef __cplusplus
 }

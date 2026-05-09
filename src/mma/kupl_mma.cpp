@@ -22,8 +22,7 @@ using namespace kupl::tensor;
 
 static kupl_arch_type_t arch_type;
 
-__attribute__((constructor(102)))
-static void kupl_mma_arch_detect()
+__attribute__((constructor(102))) static void kupl_mma_arch_detect()
 {
     arch_type = kupl_arch_detect();
 }
@@ -37,8 +36,7 @@ static void kupl_mma_arch_detect()
 #pragma GCC diagnostic ignored "-Wstack-usage=32768"
 #endif
 
-static kupl_always_inline
-bool mma_check(void *data_a, void *data_b, void *data_c)
+static kupl_always_inline bool mma_check(void *data_a, void *data_b, void *data_c)
 {
     if (kupl_unlikely(arch_type != KUPL_CPU_HISILICOM_920F)) {
         kupl_error("The KUPL mma feature cannot be used in environments without Matrix_computation capability");
@@ -54,36 +52,33 @@ bool mma_check(void *data_a, void *data_b, void *data_c)
 #define kupl_export __attribute__((visibility("default")))
 
 #if defined(__clang__)
-#define MATRIX_COMP_ON()                                                                                \
-do {                                                                                            \
-    __asm__ volatile("SMSTART":::"z0", "z1", "z2", "z3", "z4", "z5", "z6", "z7",                \
-                                 "z8", "z9", "z10", "z11", "z12", "z13", "z14", "z15",          \
-                                 "z16", "z17", "z18", "z19", "z20", "z21", "z22", "z23",        \
-                                 "z24", "z25", "z26", "z27", "z28", "z29", "z30", "z31",        \
-                                 "p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7",                \
-                                 "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15");         \
-    __asm__ volatile("ISB");                                                                    \
-} while (0)
-#define MATRIX_COMP_OFF()                                                                               \
-do {                                                                                            \
-    __asm__ volatile("SMSTOP":::"z0", "z1", "z2", "z3", "z4", "z5", "z6", "z7",                 \
-                                "z8", "z9", "z10", "z11", "z12", "z13", "z14", "z15",           \
-                                "z16", "z17", "z18", "z19", "z20", "z21", "z22", "z23",         \
-                                "z24", "z25", "z26", "z27", "z28", "z29", "z30", "z31",         \
-                                "p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7",                 \
-                                "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15");          \
-    __asm__ volatile("ISB");                                                                    \
-} while (0)
+#define MATRIX_COMP_ON()                                                                                               \
+    do {                                                                                                               \
+        __asm__ volatile("SMSTART" ::                                                                                  \
+                             : "z0", "z1", "z2", "z3", "z4", "z5", "z6", "z7", "z8", "z9", "z10", "z11", "z12", "z13", \
+                               "z14", "z15", "z16", "z17", "z18", "z19", "z20", "z21", "z22", "z23", "z24", "z25",     \
+                               "z26", "z27", "z28", "z29", "z30", "z31", "p0", "p1", "p2", "p3", "p4", "p5", "p6",     \
+                               "p7", "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15");                            \
+        __asm__ volatile("ISB");                                                                                       \
+    } while (0)
+#define MATRIX_COMP_OFF()                                                                                              \
+    do {                                                                                                               \
+        __asm__ volatile("SMSTOP" ::                                                                                   \
+                             : "z0", "z1", "z2", "z3", "z4", "z5", "z6", "z7", "z8", "z9", "z10", "z11", "z12", "z13", \
+                               "z14", "z15", "z16", "z17", "z18", "z19", "z20", "z21", "z22", "z23", "z24", "z25",     \
+                               "z26", "z27", "z28", "z29", "z30", "z31", "p0", "p1", "p2", "p3", "p4", "p5", "p6",     \
+                               "p7", "p8", "p9", "p10", "p11", "p12", "p13", "p14", "p15");                            \
+        __asm__ volatile("ISB");                                                                                       \
+    } while (0)
 #elif defined(__GNUC__)
 #define MATRIX_COMP_ON()
 #define MATRIX_COMP_OFF()
 #endif
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 16,
-                                        Stride<Int<1>, Int<32>>, Stride<Int<16>, Int<1>>, Stride<Int<16>, Int<1>>,
-                                        double, double, double>
-                                        (double *data_a, double *data_b, double *data_c, int size_k) MMA_INOUT
+kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 16, Stride<Int<1>, Int<32>>, Stride<Int<16>, Int<1>>,
+                                                       Stride<Int<16>, Int<1>>, double, double, double>(
+    double *data_a, double *data_b, double *data_c, int size_k) MMA_INOUT
 {
     if (kupl_unlikely(mma_check(data_a, data_b, data_c) == false)) {
         return;
@@ -119,7 +114,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 16,
         svwrite_hor_za64_m(3, t, p64, vc6);
         vc7 = svld1_f64(p64, matc3 + 8);
         svwrite_hor_za64_m(7, t, p64, vc7);
-        matc0 += 16;        // ldm_c
+        matc0 += 16; // ldm_c
         matc1 += 16;
         matc2 += 16;
         matc3 += 16;
@@ -142,18 +137,15 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 16,
         svmopa_za64_f64_m(6, p64, p64, vc2, vc5);
         svmopa_za64_f64_m(7, p64, p64, vc3, vc5);
 
-        data_atmp += 32;    // ldm_a;
-        data_btmp += 16;    // ldm_b;
+        data_atmp += 32; // ldm_a;
+        data_btmp += 16; // ldm_b;
     }
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
-                                        Stride<Int<2>, Stride<Int<1>, Int<32>>>,
-                                        Stride<Stride<Int<1>, Int<128>>, Int<2>>,
-                                        Stride<Int<64>, Int<1>>,
-                                        bfloat16_t, bfloat16_t, float>
-                                        (bfloat16_t *data_a, bfloat16_t *data_b, float *data_c, int size_k) MMA_INOUT
+kupl_export void kupl::tensor::TiledCallFunc::call_mma<
+    16, 64, Stride<Int<2>, Stride<Int<1>, Int<32>>>, Stride<Stride<Int<1>, Int<128>>, Int<2>>, Stride<Int<64>, Int<1>>,
+    bfloat16_t, bfloat16_t, float>(bfloat16_t *data_a, bfloat16_t *data_b, float *data_c, int size_k) MMA_INOUT
 {
     if (kupl_unlikely(mma_check(data_a, data_b, data_c) == false)) {
         return;
@@ -208,8 +200,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
 }
 
 #if defined(__clang__)
-static kupl_always_inline
-bfloat16_t float_to_bf16_arm(float x)
+static kupl_always_inline bfloat16_t float_to_bf16_arm(float x)
 {
     return (bfloat16_t)x;
 }
@@ -221,10 +212,9 @@ bfloat16_t float_to_bf16_arm(float x)
 #endif
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
-                                        Stride<Int<1>, Int<16>>, Stride<Int<64>, Int<1>>, Stride<Int<64>, Int<1>>,
-                                        bfloat16_t, bfloat16_t, float>
-                                        (bfloat16_t *data_a, bfloat16_t *data_b, float *data_c, int size_k) MMA_INOUT
+kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64, Stride<Int<1>, Int<16>>, Stride<Int<64>, Int<1>>,
+                                                       Stride<Int<64>, Int<1>>, bfloat16_t, bfloat16_t, float>(
+    bfloat16_t *data_a, bfloat16_t *data_b, float *data_c, int size_k) MMA_INOUT
 {
     if (kupl_unlikely(mma_check(data_a, data_b, data_c) == false)) {
         return;
@@ -295,12 +285,9 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
-                                        Stride<Int<4>, Stride<Int<1>, Int<64>>>,
-                                        Stride<Stride<Int<1>, Int<256>>, Int<4>>,
-                                        Stride<Int<64>, Int<1>>,
-                                        int8_t, int8_t, int32_t>
-                                        (int8_t *data_a, int8_t *data_b, int32_t *data_c, int size_k) MMA_INOUT
+kupl_export void kupl::tensor::TiledCallFunc::call_mma<
+    16, 64, Stride<Int<4>, Stride<Int<1>, Int<64>>>, Stride<Stride<Int<1>, Int<256>>, Int<4>>, Stride<Int<64>, Int<1>>,
+    int8_t, int8_t, int32_t>(int8_t *data_a, int8_t *data_b, int32_t *data_c, int size_k) MMA_INOUT
 {
     if (kupl_unlikely(mma_check(data_a, data_b, data_c) == false)) {
         return;
@@ -355,12 +342,9 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<16, 64,
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 32,
-                                        Stride<Int<4>, Stride<Int<1>, Int<128>>>,
-                                        Stride<Stride<Int<1>, Int<128>>, Int<4>>,
-                                        Stride<Int<32>, Int<1>>,
-                                        int8_t, int8_t, int32_t>
-                                        (int8_t *data_a, int8_t *data_b, int32_t *data_c, int size_k) MMA_INOUT
+kupl_export void kupl::tensor::TiledCallFunc::call_mma<
+    32, 32, Stride<Int<4>, Stride<Int<1>, Int<128>>>, Stride<Stride<Int<1>, Int<128>>, Int<4>>, Stride<Int<32>, Int<1>>,
+    int8_t, int8_t, int32_t>(int8_t *data_a, int8_t *data_b, int32_t *data_c, int size_k) MMA_INOUT
 {
     if (kupl_unlikely(mma_check(data_a, data_b, data_c) == false)) {
         return;
@@ -412,8 +396,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_mma<32, 32,
     }
 }
 
-static kupl_always_inline
-bool store_check(void *data)
+static kupl_always_inline bool store_check(void *data)
 {
     if (kupl_unlikely(arch_type != KUPL_CPU_HISILICOM_920F)) {
         kupl_error("The KUPL mma feature cannot be used in environments without Matrix_computation capability");
@@ -427,8 +410,7 @@ bool store_check(void *data)
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 16, Stride<Int<16>, Int<1>>, double>(
-    double *data) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 16, Stride<Int<16>, Int<1>>, double>(double *data) MMA_IN
 {
     if (kupl_unlikely(store_check(data) == false)) {
         return;
@@ -456,8 +438,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 16, Stride<Int<16>,
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>, Int<1>>, float>(
-    float *data) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>, Int<1>>, float>(float *data) MMA_IN
 {
     if (kupl_unlikely(store_check(data) == false)) {
         return;
@@ -481,8 +462,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>,
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>, Int<1>>, int32_t>(
-    int32_t *data) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>, Int<1>>, int32_t>(int32_t *data) MMA_IN
 {
     if (kupl_unlikely(store_check(data) == false)) {
         return;
@@ -506,8 +486,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_store<16, 64, Stride<Int<64>,
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 32, Stride<Int<32>, Int<1>>, int32_t>(
-    int32_t *data) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 32, Stride<Int<32>, Int<1>>, int32_t>(int32_t *data) MMA_IN
 {
     if (kupl_unlikely(store_check(data) == false)) {
         return;
@@ -530,8 +509,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_store<32, 32, Stride<Int<32>,
     MATRIX_COMP_OFF();
 }
 
-static kupl_always_inline
-bool copy_check(void *data_dst, void *data_src, int size_m, int size_n)
+static kupl_always_inline bool copy_check(void *data_dst, void *data_src, int size_m, int size_n)
 {
     if (kupl_unlikely(arch_type != KUPL_CPU_HISILICOM_920F)) {
         kupl_error("The KUPL mma feature cannot be used in environments without Matrix_computation capability");
@@ -557,13 +535,16 @@ static constexpr int F64_TILE_8X2 = 16;
 static constexpr int F64_TILE_8X3 = 24;
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>, double, double>(
-    double *data_dst, double *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>, double, double>(double *data_dst,
+                                                                                                  double *data_src,
+                                                                                                  int size_m,
+                                                                                                  int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_n % F64_TILE_8)) {    // 向量寄存器的宽度为512，对于F64精度数据而言一个向量寄存器可以存放8个F64数据
+    if (kupl_unlikely(size_n %
+                      F64_TILE_8)) { // 向量寄存器的宽度为512，对于F64精度数据而言一个向量寄存器可以存放8个F64数据
         kupl_error("The KUPL copy atom COPY_32x1_F64_RM2CM now can "
                    "only support scenarios where n is a multiple of 8");
         return;
@@ -571,7 +552,7 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>
     MATRIX_COMP_ON();
     svbool_t p = svwhilelt_b64(0, F64_TILE_8);
     for (int tile_m = 0; tile_m < size_m; tile_m += M_32) {
-        for (int tile_n = 0; tile_n < size_n ; tile_n += F64_TILE_8) {
+        for (int tile_n = 0; tile_n < size_n; tile_n += F64_TILE_8) {
             // 横着写入向量寄存器
             double *data_src0 = data_src + tile_m * size_n + tile_n;
             double *data_src1 = data_src + (tile_m + F64_TILE_8) * size_n + tile_n;
@@ -609,13 +590,16 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_1x16_F64_CM2RM>, double, double>(
-    double *data_dst, double *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_1x16_F64_CM2RM>, double, double>(double *data_dst,
+                                                                                                  double *data_src,
+                                                                                                  int size_m,
+                                                                                                  int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_m % F64_TILE_8)) {    // 向量寄存器的宽度为512，对于F64精度数据而言一个向量寄存器可以存放8个F64数据
+    if (kupl_unlikely(size_m %
+                      F64_TILE_8)) { // 向量寄存器的宽度为512，对于F64精度数据而言一个向量寄存器可以存放8个F64数据
         kupl_error("The KUPL copy atom COPY_1x16_F64_CM2RM now can "
                    "only support scenarios where m is a multiple of 8");
         return;
@@ -662,7 +646,9 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_16x2_BF16_RM2ZZ
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_n % BF16_TILE_32)) {    // 向量寄存器的宽度为512，对于bfloat16精度数据而言一个向量寄存器可以存放32个bfloat16数据
+    if (kupl_unlikely(
+            size_n %
+            BF16_TILE_32)) { // 向量寄存器的宽度为512，对于bfloat16精度数据而言一个向量寄存器可以存放32个bfloat16数据
         kupl_error("The KUPL copy atom COPY_16x2_BF16_RM2ZZ now can "
                    "only support scenarios where n is a multiple of 32");
         return;
@@ -696,7 +682,9 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_2x64_BF16_CM2NN
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_m % BF16_TILE_32)) {    // 向量寄存器的宽度为512，对于bfloat16精度数据而言一个向量寄存器可以存放32个bfloat16数据
+    if (kupl_unlikely(
+            size_m %
+            BF16_TILE_32)) { // 向量寄存器的宽度为512，对于bfloat16精度数据而言一个向量寄存器可以存放32个bfloat16数据
         kupl_error("The KUPL copy atom COPY_2x64_BF16_CM2NN now can "
                    "only support scenarios where m is a multiple of 32");
         return;
@@ -783,13 +771,17 @@ static constexpr int INT32_TILE_16X2 = 32;
 static constexpr int INT32_TILE_16X3 = 48;
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_16x4_INT8_RM2ZZ>, int8_t, int8_t>(
-    int8_t *data_dst, int8_t *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_16x4_INT8_RM2ZZ>, int8_t, int8_t>(int8_t *data_dst,
+                                                                                                   int8_t *data_src,
+                                                                                                   int size_m,
+                                                                                                   int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_n % INT8_TILE_64)) {    // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
+    if (kupl_unlikely(
+            size_n %
+            INT8_TILE_64)) { // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
         kupl_error("The KUPL copy atom COPY_16x4_INT8_RM2ZZ now can "
                    "only support scenarios where n is a multiple of 64");
         return;
@@ -817,13 +809,17 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_16x4_INT8_RM2ZZ
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_4x64_INT8_CM2NN>, int8_t, int8_t>(
-    int8_t *data_dst, int8_t *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_4x64_INT8_CM2NN>, int8_t, int8_t>(int8_t *data_dst,
+                                                                                                   int8_t *data_src,
+                                                                                                   int size_m,
+                                                                                                   int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_m % INT8_TILE_64)) {    // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
+    if (kupl_unlikely(
+            size_m %
+            INT8_TILE_64)) { // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
         kupl_error("The KUPL copy atom COPY_4x64_INT8_CM2NN now can "
                    "only support scenarios where m is a multiple of 32");
         return;
@@ -869,13 +865,17 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_4x64_INT8_CM2NN
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x4_INT8_RM2ZZ>, int8_t, int8_t>(
-    int8_t *data_dst, int8_t *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x4_INT8_RM2ZZ>, int8_t, int8_t>(int8_t *data_dst,
+                                                                                                   int8_t *data_src,
+                                                                                                   int size_m,
+                                                                                                   int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_n % INT8_TILE_64)) {    // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
+    if (kupl_unlikely(
+            size_n %
+            INT8_TILE_64)) { // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
         kupl_error("The KUPL copy atom COPY_32x4_INT8_RM2ZZ now can "
                    "only support scenarios where n is a multiple of 64");
         return;
@@ -909,13 +909,17 @@ kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_32x4_INT8_RM2ZZ
 }
 
 template <>
-kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_4x32_INT8_CM2NN>, int8_t, int8_t>(
-    int8_t *data_dst, int8_t *data_src, int size_m, int size_n) MMA_IN
+kupl_export void kupl::tensor::TiledCallFunc::call_copy<Ops<COPY_4x32_INT8_CM2NN>, int8_t, int8_t>(int8_t *data_dst,
+                                                                                                   int8_t *data_src,
+                                                                                                   int size_m,
+                                                                                                   int size_n) MMA_IN
 {
     if (kupl_unlikely(copy_check(data_dst, data_src, size_m, size_n) == false)) {
         return;
     }
-    if (kupl_unlikely(size_m % INT8_TILE_64)) {    // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
+    if (kupl_unlikely(
+            size_m %
+            INT8_TILE_64)) { // 向量寄存器的宽度为512，对于int8_t精度数据而言一个向量寄存器可以存放64个int8_t数据
         kupl_error("The KUPL copy atom COPY_4x32_INT8_CM2NN now can "
                    "only support scenarios where m is a multiple of 32");
         return;

@@ -21,10 +21,10 @@
 #include "utils/debug/kupl_log.h"
 #include "utils/sys/kupl_glibc_version.h"
 
-static int g_dl_self_found_var;     /* just for dladdr() to find this library's path */
+static int g_dl_self_found_var; /* just for dladdr() to find this library's path */
 static char g_dl_default_path[KUPL_PATH_MAX];
 
-const char* kupl_dl_get_default_path()
+const char *kupl_dl_get_default_path()
 {
     if (g_dl_default_path[0] != '\0') {
         return g_dl_default_path;
@@ -32,7 +32,7 @@ const char* kupl_dl_get_default_path()
 
     dlerror();
     Dl_info dl_info;
-    int ret = dladdr((void*)&g_dl_self_found_var, &dl_info);
+    int ret = dladdr((void *)&g_dl_self_found_var, &dl_info);
     if (ret == 0 || dl_info.dli_fname == nullptr) {
         const char *error = dlerror();
         if (error) {
@@ -51,7 +51,7 @@ const char* kupl_dl_get_default_path()
     return g_dl_default_path;
 }
 
-kupl_dl_module_t* kupl_dl_open(const char *libpath, kupl_dl_module_sym_t *syms, int sym_count)
+kupl_dl_module_t *kupl_dl_open(const char *libpath, kupl_dl_module_sym_t *syms, int sym_count)
 {
     if (kupl_unlikely(libpath == nullptr || syms == nullptr || sym_count <= 0)) {
         return nullptr;

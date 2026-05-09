@@ -20,20 +20,18 @@
 extern "C" {
 #endif
 
-#define PAGE_SIZE   sysconf(_SC_PAGE_SIZE)
+#define PAGE_SIZE sysconf(_SC_PAGE_SIZE)
 
-#define kupl_shm_align_down_pow2(_n, _alignment) \
-    ((_n) & ~((_alignment) - 1))
+#define kupl_shm_align_down_pow2(_n, _alignment) ((_n) & ~((_alignment) - 1))
 
-#define kupl_shm_align_up_pow2(_n, _alignment) \
-    kupl_shm_align_down_pow2((_n) + (_alignment) - 1, _alignment)
+#define kupl_shm_align_up_pow2(_n, _alignment) kupl_shm_align_down_pow2((_n) + (_alignment) - 1, _alignment)
 
-typedef struct kupl_fence* kupl_fence_h;
+typedef struct kupl_fence *kupl_fence_h;
 
 struct kupl_shm_info {
     uint32_t is_contig;
 };
-typedef struct kupl_shm_info* kupl_shm_info_h;
+typedef struct kupl_shm_info *kupl_shm_info_h;
 extern kupl_shm_info shm_info;
 extern bool g_is_abnormal_exit;
 extern bool g_shm_inited;
@@ -66,8 +64,8 @@ typedef enum kupl_shm_type {
 
 typedef int (*kupl_shm_init_func_t)(void);
 typedef int (*kupl_shm_finalize_func_t)(void);
-typedef int (*kupl_shm_win_alloc_func_t)(size_t size, kupl_shm_comm_h comm, void **baseptr,
-    kupl_shm_win_h *win, int flag, size_t *offset_list);
+typedef int (*kupl_shm_win_alloc_func_t)(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win,
+                                         int flag, size_t *offset_list);
 typedef int (*kupl_shm_win_free_func_t)(kupl_shm_win_h win, int flag);
 typedef int (*kupl_shm_win_query_func_t)(kupl_shm_win_h win, int remote_rank, void **baseptr);
 

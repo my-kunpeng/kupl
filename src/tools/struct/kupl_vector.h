@@ -30,17 +30,17 @@ extern "C" {
  */
 typedef struct kupl_vector {
     const char *name;
-    KUPL_ATOMIC_SIZE_T head;        /* the head element index in this vector */
-    KUPL_ATOMIC_SIZE_T tail;        /* the tail element index in this vector */
-    size_t capacity;                 /* max count in this vector */
-    size_t elem_size;                /* the size of element */
-    void *data;                      /* the data buffer */
+    KUPL_ATOMIC_SIZE_T head; /* the head element index in this vector */
+    KUPL_ATOMIC_SIZE_T tail; /* the tail element index in this vector */
+    size_t capacity;         /* max count in this vector */
+    size_t elem_size;        /* the size of element */
+    void *data;              /* the data buffer */
 } kupl_vector_t;
 
 /**
  * @brief create a kupl_vector with capacity
  */
-kupl_vector_t* kupl_vector_create(size_t capacity, size_t elem_size, const char *name);
+kupl_vector_t *kupl_vector_create(size_t capacity, size_t elem_size, const char *name);
 
 /**
  * @brief cleanup the vector and release all memory
@@ -50,8 +50,7 @@ void kupl_vector_cleanup(kupl_vector_t *vector);
 /**
  * @brief check wheather the vector is empty
  */
-static kupl_always_inline
-int kupl_vector_empty(kupl_vector_t *vector)
+static kupl_always_inline int kupl_vector_empty(kupl_vector_t *vector)
 {
     if (kupl_unlikely(vector == nullptr)) {
         return 0;
@@ -63,8 +62,7 @@ int kupl_vector_empty(kupl_vector_t *vector)
 /**
  * @brief get the size of vector
  */
-static kupl_always_inline
-size_t kupl_vector_size(kupl_vector_t *vector)
+static kupl_always_inline size_t kupl_vector_size(kupl_vector_t *vector)
 {
     if (kupl_unlikely(vector == nullptr)) {
         return 0;
@@ -77,8 +75,7 @@ size_t kupl_vector_size(kupl_vector_t *vector)
  * @brief push the @b elem to vector's tail
  * @return KUPL_OK for push success, other for failed (maybe vector is fully)
  */
-static kupl_always_inline
-int kupl_vector_push_back(kupl_vector_t *vector, const void *elem)
+static kupl_always_inline int kupl_vector_push_back(kupl_vector_t *vector, const void *elem)
 {
     if (kupl_unlikely(vector == nullptr || elem == nullptr)) {
         return KUPL_ERROR;
@@ -100,8 +97,7 @@ int kupl_vector_push_back(kupl_vector_t *vector, const void *elem)
 /**
  * @brief pop the front element
  */
-static kupl_always_inline
-void kupl_vector_pop_front(kupl_vector_t *vector)
+static kupl_always_inline void kupl_vector_pop_front(kupl_vector_t *vector)
 {
     if (kupl_unlikely(vector == nullptr || vector->head == vector->tail)) {
         return;
@@ -114,8 +110,7 @@ void kupl_vector_pop_front(kupl_vector_t *vector)
 /**
  * @brief get the vector[idx] element
  */
-static kupl_always_inline
-int kupl_vector_get(kupl_vector_t *vector, size_t idx, void *elem)
+static kupl_always_inline int kupl_vector_get(kupl_vector_t *vector, size_t idx, void *elem)
 {
     if (kupl_unlikely(vector == nullptr || idx >= kupl_vector_size(vector) || elem == nullptr)) {
         return KUPL_ERROR;
@@ -131,8 +126,7 @@ int kupl_vector_get(kupl_vector_t *vector, size_t idx, void *elem)
 /**
  * @brief set the vector[idx] element
  */
-static kupl_always_inline
-int kupl_vector_set(kupl_vector_t *vector, size_t idx, const void *elem)
+static kupl_always_inline int kupl_vector_set(kupl_vector_t *vector, size_t idx, const void *elem)
 {
     if (kupl_unlikely(vector == nullptr || idx >= kupl_vector_size(vector) || elem == nullptr)) {
         return KUPL_ERROR;
@@ -145,8 +139,7 @@ int kupl_vector_set(kupl_vector_t *vector, size_t idx, const void *elem)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_vector_front(kupl_vector_t *vector, void *elem)
+static kupl_always_inline int kupl_vector_front(kupl_vector_t *vector, void *elem)
 {
     if (kupl_unlikely(vector == nullptr || vector->tail <= vector->head)) {
         return KUPL_ERROR;
@@ -155,8 +148,7 @@ int kupl_vector_front(kupl_vector_t *vector, void *elem)
     return kupl_vector_get(vector, 0, elem);
 }
 
-static kupl_always_inline
-int kupl_vector_back(kupl_vector_t *vector, void *elem)
+static kupl_always_inline int kupl_vector_back(kupl_vector_t *vector, void *elem)
 {
     if (kupl_unlikely(vector == nullptr || vector->tail <= vector->head)) {
         return KUPL_ERROR;
@@ -166,42 +158,40 @@ int kupl_vector_back(kupl_vector_t *vector, void *elem)
     return kupl_vector_get(vector, tail_index, elem);
 }
 
-#define kupl_vector_push_back_macro(_v, _elem)                 \
-({                                                              \
-    int _ret = KUPL_OK;                                        \
-    auto _arr = (decltype(&(_elem)))(_v)->data;                 \
-    auto _tail = KUPL_ATOMIC_LD_RLX(&((_v)->tail));            \
-    auto _head = KUPL_ATOMIC_LD_RLX(&((_v)->head));            \
-    if (kupl_likely((_tail - _head + 1) < (_v)->capacity)) {   \
-        auto _push_idx = _tail % (_v)->capacity;                \
-        _arr[_push_idx] = _elem;                                \
-        KUPL_ATOMIC_ADD_RLS(&((_v)->tail), 1);                 \
-    } else {                                                    \
-        _ret = KUPL_ERROR;                                     \
-    }                                                           \
-    _ret;                                                       \
-})
+#define kupl_vector_push_back_macro(_v, _elem)                   \
+    ({                                                           \
+        int _ret = KUPL_OK;                                      \
+        auto _arr = (decltype(&(_elem)))(_v)->data;              \
+        auto _tail = KUPL_ATOMIC_LD_RLX(&((_v)->tail));          \
+        auto _head = KUPL_ATOMIC_LD_RLX(&((_v)->head));          \
+        if (kupl_likely((_tail - _head + 1) < (_v)->capacity)) { \
+            auto _push_idx = _tail % (_v)->capacity;             \
+            _arr[_push_idx] = _elem;                             \
+            KUPL_ATOMIC_ADD_RLS(&((_v)->tail), 1);               \
+        } else {                                                 \
+            _ret = KUPL_ERROR;                                   \
+        }                                                        \
+        _ret;                                                    \
+    })
 
-#define kupl_vector_front_macro(_v, _elem)                             \
-do {                                                                    \
-    decltype(&(_elem)) _arr = (decltype(&(_elem)))(_v)->data;           \
-    auto _idx = KUPL_ATOMIC_LD_RLX(&((_v)->head)) % (_v)->capacity;    \
-    _elem = _arr[_idx];                                                 \
-} while (0)
+#define kupl_vector_front_macro(_v, _elem)                              \
+    do {                                                                \
+        decltype(&(_elem)) _arr = (decltype(&(_elem)))(_v)->data;       \
+        auto _idx = KUPL_ATOMIC_LD_RLX(&((_v)->head)) % (_v)->capacity; \
+        _elem = _arr[_idx];                                             \
+    } while (0)
 
-#define kupl_vector_back_macro(_v, _elem)                                  \
-do {                                                                        \
-    decltype(&(_elem)) _arr = (decltype(&(_elem)))(_v)->data;               \
-    auto _idx = (KUPL_ATOMIC_LD_RLX(&((_v)->tail)) - 1) % (_v)->capacity;  \
-    _elem = _arr[_idx];                                                     \
-} while (0)
+#define kupl_vector_back_macro(_v, _elem)                                     \
+    do {                                                                      \
+        decltype(&(_elem)) _arr = (decltype(&(_elem)))(_v)->data;             \
+        auto _idx = (KUPL_ATOMIC_LD_RLX(&((_v)->tail)) - 1) % (_v)->capacity; \
+        _elem = _arr[_idx];                                                   \
+    } while (0)
 
-#define kupl_vector_full_macro(_v)         \
+#define kupl_vector_full_macro(_v) \
     (KUPL_ATOMIC_LD_RLX(&((_v)->tail)) - KUPL_ATOMIC_LD_RLX(&((_v)->head))) + 1 >= (_v)->capacity)
-#define kupl_vector_empty_macro(_v)        \
-    (KUPL_ATOMIC_LD_RLX(&((_v)->head)) == KUPL_ATOMIC_LD_RLX(&((_v)->tail)))
-#define kupl_vector_pop_front_macro(_v)    \
-    KUPL_ATOMIC_ADD_RLX(&((_v)->head), 1)
+#define kupl_vector_empty_macro(_v) (KUPL_ATOMIC_LD_RLX(&((_v)->head)) == KUPL_ATOMIC_LD_RLX(&((_v)->tail)))
+#define kupl_vector_pop_front_macro(_v) KUPL_ATOMIC_ADD_RLX(&((_v)->head), 1)
 
 #ifdef __cplusplus
 }

@@ -26,8 +26,7 @@ int kupl_shm_xpmem_remove(kupl_shm_xpmem_segid_t segid)
     return xpmem_remove(segid);
 }
 
-kupl_shm_xpmem_apid_t kupl_shm_xpmem_get(kupl_shm_xpmem_segid_t segid,
-    int flags, int permit_type, void *permit_value)
+kupl_shm_xpmem_apid_t kupl_shm_xpmem_get(kupl_shm_xpmem_segid_t segid, int flags, int permit_type, void *permit_value)
 {
     return xpmem_get(segid, flags, permit_type, permit_value);
 }

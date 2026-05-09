@@ -45,7 +45,7 @@
 #include "utils/sys/kupl_hardware.h"
 #include "tools/profile/kupl_profile.h"
 
-void* kupl_malloc_inner(size_t size)
+void *kupl_malloc_inner(size_t size)
 {
 #ifdef KUPL_USE_TCMALLOC
     return tc_malloc(size);
@@ -58,7 +58,7 @@ void* kupl_malloc_inner(size_t size)
 #endif
 }
 
-void* kupl_calloc(size_t num, size_t size)
+void *kupl_calloc(size_t num, size_t size)
 {
 #ifdef KUPL_USE_TCMALLOC
     return tc_calloc(num, size);
@@ -71,7 +71,7 @@ void* kupl_calloc(size_t num, size_t size)
 #endif
 }
 
-void* kupl_aligned_alloc(size_t alignment, size_t size)
+void *kupl_aligned_alloc(size_t alignment, size_t size)
 {
 #ifdef KUPL_USE_TCMALLOC
     return tc_memalign(alignment, size);
@@ -84,7 +84,7 @@ void* kupl_aligned_alloc(size_t alignment, size_t size)
 #endif
 }
 
-void kupl_free_inner(void* ptr)
+void kupl_free_inner(void *ptr)
 {
 #ifdef KUPL_USE_TCMALLOC
     tc_free(ptr);
@@ -99,47 +99,40 @@ void kupl_free_inner(void* ptr)
 
 #define HUGE_PAGE_SIZE (2 * 1024 * 1024)
 
-#define ALIGN_TO_PAGE_SIZE(x) \
-    (((x) + HUGE_PAGE_SIZE - 1) / HUGE_PAGE_SIZE * HUGE_PAGE_SIZE)
+#define ALIGN_TO_PAGE_SIZE(x) (((x) + HUGE_PAGE_SIZE - 1) / HUGE_PAGE_SIZE * HUGE_PAGE_SIZE)
 
-#define KUPL_MEMORY_WARMUP_COUNT           32
-#define KUPL_MEMORY_WARMUP_SIZE0           64
-#define KUPL_MEMORY_WARMUP_SIZE1           128
-#define KUPL_MEMORY_WARMUP_SIZE2           256
-#define KUPL_MEMORY_WARMUP_SIZE3           512
-#define KUPL_MEMORY_BIN_INDEX_INIT         (-1)
+#define KUPL_MEMORY_WARMUP_COUNT 32
+#define KUPL_MEMORY_WARMUP_SIZE0 64
+#define KUPL_MEMORY_WARMUP_SIZE1 128
+#define KUPL_MEMORY_WARMUP_SIZE2 256
+#define KUPL_MEMORY_WARMUP_SIZE3 512
+#define KUPL_MEMORY_BIN_INDEX_INIT (-1)
 #define KUPL_FAST_MEMORY_OTHRE_QUEUE_LIMIT 16
-#define KUPL_NORMAL_MEMORY_FAST_GROW_SIZE  65536
-#define KUPL_MEM_BINS_THRESHOLD            4
-#define KUPL_HBW_BIAS                      16
+#define KUPL_NORMAL_MEMORY_FAST_GROW_SIZE 65536
+#define KUPL_MEM_BINS_THRESHOLD 4
+#define KUPL_HBW_BIAS 16
 
-#define MEM_FAST_UNIT   KUPL_CACHE_LINE
+#define MEM_FAST_UNIT KUPL_CACHE_LINE
 static const size_t g_fast_bin_size[] = {
     1 * MEM_FAST_UNIT, /* when user alloc 0 size buffer, we still return some space */
-    1 * MEM_FAST_UNIT, 2 * MEM_FAST_UNIT, 3 * MEM_FAST_UNIT,
-    4 * MEM_FAST_UNIT, 5 * MEM_FAST_UNIT, 6 * MEM_FAST_UNIT,
-    7 * MEM_FAST_UNIT, 8 * MEM_FAST_UNIT, 9 * MEM_FAST_UNIT,
-    10 * MEM_FAST_UNIT, 11 * MEM_FAST_UNIT, 12 * MEM_FAST_UNIT,
-    13 * MEM_FAST_UNIT, 14 * MEM_FAST_UNIT, 15 * MEM_FAST_UNIT,
-    16 * MEM_FAST_UNIT, 17 * MEM_FAST_UNIT, 18 * MEM_FAST_UNIT
-};
+    1 * MEM_FAST_UNIT,  2 * MEM_FAST_UNIT,  3 * MEM_FAST_UNIT,  4 * MEM_FAST_UNIT,  5 * MEM_FAST_UNIT,
+    6 * MEM_FAST_UNIT,  7 * MEM_FAST_UNIT,  8 * MEM_FAST_UNIT,  9 * MEM_FAST_UNIT,  10 * MEM_FAST_UNIT,
+    11 * MEM_FAST_UNIT, 12 * MEM_FAST_UNIT, 13 * MEM_FAST_UNIT, 14 * MEM_FAST_UNIT, 15 * MEM_FAST_UNIT,
+    16 * MEM_FAST_UNIT, 17 * MEM_FAST_UNIT, 18 * MEM_FAST_UNIT};
 
-static const size_t g_memory_bin_size[] = {
-    0, 512, 1024, 2 * 1024, 4 * 1024, 8 * 1024, 16 * 1024, 32 * 1024, 64 * 1024, 128 * 1024,
-    256 * 1024, 512 * 1024, 1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024};
+static const size_t g_memory_bin_size[] = {0,          512,        1024,        2 * 1024,        4 * 1024,
+                                           8 * 1024,   16 * 1024,  32 * 1024,   64 * 1024,       128 * 1024,
+                                           256 * 1024, 512 * 1024, 1024 * 1024, 2 * 1024 * 1024, 4 * 1024 * 1024};
 
-static const size_t g_memory_warmup_size[] = {
-    KUPL_MEMORY_WARMUP_SIZE0, KUPL_MEMORY_WARMUP_SIZE1,
-    KUPL_MEMORY_WARMUP_SIZE2, KUPL_MEMORY_WARMUP_SIZE3
-};
+static const size_t g_memory_warmup_size[] = {KUPL_MEMORY_WARMUP_SIZE0, KUPL_MEMORY_WARMUP_SIZE1,
+                                              KUPL_MEMORY_WARMUP_SIZE2, KUPL_MEMORY_WARMUP_SIZE3};
 
-#define FAST_BINS_COUNT             (sizeof(g_fast_bin_size) / sizeof(size_t))
-#define MEM_BINS_COUNT              (sizeof(g_memory_bin_size) / sizeof(size_t))
-#define MEM_WARMUP_SIZE_COUNT       (sizeof(g_memory_warmup_size) / sizeof(size_t))
-#define MEM_CHUNK_GROW_SIZE         (g_memory_bin_size[MEM_BINS_COUNT - 1])
-#define MEM_MAX_SIZE                (MEM_CHUNK_GROW_SIZE - 2 * sizeof(kupl_buffer_desc_t))
-#define MEM_IS_WHOLE_CHUNK(_desc)       \
-    ((_desc)->total_size == (ssize_t)(MEM_CHUNK_GROW_SIZE - sizeof(kupl_buffer_desc_t)))
+#define FAST_BINS_COUNT (sizeof(g_fast_bin_size) / sizeof(size_t))
+#define MEM_BINS_COUNT (sizeof(g_memory_bin_size) / sizeof(size_t))
+#define MEM_WARMUP_SIZE_COUNT (sizeof(g_memory_warmup_size) / sizeof(size_t))
+#define MEM_CHUNK_GROW_SIZE (g_memory_bin_size[MEM_BINS_COUNT - 1])
+#define MEM_MAX_SIZE (MEM_CHUNK_GROW_SIZE - 2 * sizeof(kupl_buffer_desc_t))
+#define MEM_IS_WHOLE_CHUNK(_desc) ((_desc)->total_size == (ssize_t)(MEM_CHUNK_GROW_SIZE - sizeof(kupl_buffer_desc_t)))
 
 #ifdef USE_MEM_STATIS
 #define MEM_STATIS(_code) _code
@@ -149,30 +142,30 @@ static const size_t g_memory_warmup_size[] = {
 
 PROFILE_ID_REG(fast_alloc, fast_free);
 typedef struct kupl_memory_fast_cache {
-    void *self;          /* only self executor thread will get/put memory from this list */
-    void *sync;          /* other multi-executor_threads will put memory to this list */
-    void *other;         /* only self executor thread will put other executor thread's memory in there */
-    void *other_tail;    /* the tail node in other list */
+    void *self;       /* only self executor thread will get/put memory from this list */
+    void *sync;       /* other multi-executor_threads will put memory to this list */
+    void *other;      /* only self executor thread will put other executor thread's memory in there */
+    void *other_tail; /* the tail node in other list */
     size_t other_count;
 } kupl_mfc_t;
 
 typedef struct kupl_fast_desc {
     uint16_t eid;
-    int fast_bin_index;        /* >= 0 means use fast bins */
-    void *alloc_ptr;           /* alloc ptr from kupl_normal_alloc() */
+    int fast_bin_index; /* >= 0 means use fast bins */
+    void *alloc_ptr;    /* alloc ptr from kupl_normal_alloc() */
 } kupl_fast_desc_t;
 
 typedef struct kupl_buffer_desc {
-    uint16_t eid;               /* which executor executor thread alloc this buffer */
-    uint16_t ref;               /* ref count only use for fast memory */
-    int mem_bin_index;          /* >=0 mean use mem bins */
+    uint16_t eid;      /* which executor executor thread alloc this buffer */
+    uint16_t ref;      /* ref count only use for fast memory */
+    int mem_bin_index; /* >=0 mean use mem bins */
 
-    int total_size;             /* buffer total size include the buffer desc, <=0 mean is in using */
-    int prev_free;              /* =0 means prev buffer is in using, >0 means prev buffer is freed */
+    int total_size; /* buffer total size include the buffer desc, <=0 mean is in using */
+    int prev_free;  /* =0 means prev buffer is in using, >0 means prev buffer is freed */
 
     kupl_list_t list;
 
-    kupl_fast_desc_t padding;    /* please don't access this member */
+    kupl_fast_desc_t padding; /* please don't access this member */
 } kupl_buffer_desc_t;
 
 /**
@@ -201,8 +194,8 @@ typedef struct kupl_memory {
 
 bool g_mpool_inited = false;
 bool g_mpool_default_hbw = false;
-static kupl_memory_t** g_kupl_memory_pool = nullptr;
-static kupl_memory_t** g_kupl_hbw_memory_pool = nullptr;
+static kupl_memory_t **g_kupl_memory_pool = nullptr;
+static kupl_memory_t **g_kupl_hbw_memory_pool = nullptr;
 int g_kupl_memory_pool_size = 0;
 int g_kupl_max_memory_pool_size = 0;
 static int g_kupl_user_align_config = 8;
@@ -210,15 +203,14 @@ static bool g_is_hugepage_exist[KUPL_NUMA_MAX] = {false};
 static bool g_enable_hugepages = false;
 static bool sdma_mpool_func_init = false;
 
-#define KUPL_MEM(_eid)       (g_kupl_memory_pool[_eid])
-#define KUPL_HBW_MEM(_eid)   (g_kupl_hbw_memory_pool[_eid])
+#define KUPL_MEM(_eid) (g_kupl_memory_pool[_eid])
+#define KUPL_HBW_MEM(_eid) (g_kupl_hbw_memory_pool[_eid])
 #define KUPL_FAST_DESC(_ptr) (reinterpret_cast<kupl_fast_desc_t *>((char *)(_ptr) - sizeof(kupl_fast_desc_t)))
 #define KUPL_BUFF_DESC(_buf) (reinterpret_cast<kupl_buffer_desc_t *>((char *)(_buf) - sizeof(kupl_buffer_desc_t)))
 
 static void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free);
 
-static kupl_always_inline
-int kupl_get_bin_index(size_t size, const size_t *bins, size_t bin_count)
+static kupl_always_inline int kupl_get_bin_index(size_t size, const size_t *bins, size_t bin_count)
 {
     int low = 0;
     int high = (int)bin_count - 1;
@@ -240,8 +232,7 @@ int kupl_get_bin_index(size_t size, const size_t *bins, size_t bin_count)
     return low;
 }
 
-static kupl_always_inline
-void kupl_normal_insert_into_freelist(kupl_memory_t *mem, kupl_buffer_desc_t *desc)
+static kupl_always_inline void kupl_normal_insert_into_freelist(kupl_memory_t *mem, kupl_buffer_desc_t *desc)
 {
     int index = kupl_get_bin_index(static_cast<size_t>(desc->total_size), g_memory_bin_size, MEM_BINS_COUNT);
     kupl_assert((int)g_memory_bin_size[index] <= desc->total_size);
@@ -251,31 +242,29 @@ void kupl_normal_insert_into_freelist(kupl_memory_t *mem, kupl_buffer_desc_t *de
     mem->mem_bins_count[index] += 1;
 }
 
-static kupl_always_inline
-void* kupl_normal_travel_list(kupl_memory_t *mem, kupl_list_t *head, int actual, size_t index)
+static kupl_always_inline void *kupl_normal_travel_list(kupl_memory_t *mem, kupl_list_t *head, int actual, size_t index)
 {
     static const int min_buffer_size = sizeof(kupl_buffer_desc_t) + 16;
     kupl_list_t *next = head->next;
     while (next != head) {
         MEM_STATIS(mem->stats_mem_link_travel++);
-        kupl_buffer_desc_t* desc = kupl_container_of(next, kupl_buffer_desc_t, list);
+        kupl_buffer_desc_t *desc = kupl_container_of(next, kupl_buffer_desc_t, list);
         if (desc->total_size >= (ssize_t)actual) {
             if (desc->total_size - actual >= min_buffer_size) {
                 /* this buffer can spilt into a smaller buffer */
                 auto user_desc = reinterpret_cast<kupl_buffer_desc_t *>((char *)(desc) + desc->total_size - actual);
-                auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>(
-                    reinterpret_cast<uintptr_t>(user_desc) + static_cast<size_t>(actual)
-                );
+                auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>(reinterpret_cast<uintptr_t>(user_desc) +
+                                                                        static_cast<size_t>(actual));
 
-                desc->total_size -= actual;         /* decrease the remain buffer size */
+                desc->total_size -= actual; /* decrease the remain buffer size */
 
                 user_desc->eid = desc->eid;
                 user_desc->mem_bin_index = desc->mem_bin_index;
-                user_desc->total_size = -actual;    /* Set negative size to mark this buffer is in used */
+                user_desc->total_size = -actual; /* Set negative size to mark this buffer is in used */
                 user_desc->prev_free = desc->total_size;
                 kupl_list_init(&user_desc->list);
 
-                next_desc->prev_free = 0;           /* Set zero to tell the next buffer that prev buffer is in using */
+                next_desc->prev_free = 0; /* Set zero to tell the next buffer that prev buffer is in using */
 
                 kupl_list_del(&desc->list);
                 mem->mem_bins_count[index] -= 1;
@@ -288,10 +277,10 @@ void* kupl_normal_travel_list(kupl_memory_t *mem, kupl_list_t *head, int actual,
                 mem->mem_bins_count[index] -= 1;
 
                 auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>((char *)desc + desc->total_size);
-                next_desc->prev_free = 0;               /* Set zero to tell next buffer that prev buffer is in using */
+                next_desc->prev_free = 0; /* Set zero to tell next buffer that prev buffer is in using */
 
-                desc->total_size = -desc->total_size;   /* Set negative size to mark this buffer is in used */
-                desc->prev_free = 0;                    /* Because this desc buffer is the head in this chunk,
+                desc->total_size = -desc->total_size; /* Set negative size to mark this buffer is in used */
+                desc->prev_free = 0;                  /* Because this desc buffer is the head in this chunk,
                                                          * so it doesn't have prev buffer,
                                                          * so we set zero mark that prev buffer is always in using */
 
@@ -300,18 +289,17 @@ void* kupl_normal_travel_list(kupl_memory_t *mem, kupl_list_t *head, int actual,
             }
         }
 
-        next = next->next;  /* to find next */
+        next = next->next; /* to find next */
     }
 
     /* we don't find any buffer */
     return nullptr;
 }
 
-static kupl_always_inline
-void kupl_normal_sync_list_enqueue(uint16_t eid, void *ptr, bool is_hbw_enqueue = false)
+static kupl_always_inline void kupl_normal_sync_list_enqueue(uint16_t eid, void *ptr, bool is_hbw_enqueue = false)
 {
-    std::atomic<void*> *sync = (is_hbw_enqueue) ? (std::atomic<void*> *)(&(KUPL_HBW_MEM(eid)->mem_sync_list))
-                                                : (std::atomic<void*> *)(&(KUPL_MEM(eid)->mem_sync_list));
+    std::atomic<void *> *sync = (is_hbw_enqueue) ? (std::atomic<void *> *)(&(KUPL_HBW_MEM(eid)->mem_sync_list)) :
+                                                   (std::atomic<void *> *)(&(KUPL_MEM(eid)->mem_sync_list));
     auto old = KUPL_ATOMIC_LD_RLX(sync);
     *(void **)ptr = old;
 
@@ -321,10 +309,9 @@ void kupl_normal_sync_list_enqueue(uint16_t eid, void *ptr, bool is_hbw_enqueue 
     }
 }
 
-static kupl_always_inline
-void kupl_normal_sync_list_dequeue(kupl_memory_t *mem, bool is_hbw_dequeue = false)
+static kupl_always_inline void kupl_normal_sync_list_dequeue(kupl_memory_t *mem, bool is_hbw_dequeue = false)
 {
-    auto sync = (std::atomic<void*> *)(&mem->mem_sync_list);
+    auto sync = (std::atomic<void *> *)(&mem->mem_sync_list);
     auto old = KUPL_ATOMIC_LD_RLX(sync);
     while (!KUPL_ATOMIC_CAS_WEA(sync, old, nullptr)) {
         old = KUPL_ATOMIC_LD_RLX(sync);
@@ -332,9 +319,9 @@ void kupl_normal_sync_list_dequeue(kupl_memory_t *mem, bool is_hbw_dequeue = fal
 
     while (old != nullptr) {
         void *buf = old;
-        old = *(void **)old;        /* move to next */
+        old = *(void **)old; /* move to next */
 
-        kupl_normal_free(mem, buf, is_hbw_dequeue);  /* free this buffer */
+        kupl_normal_free(mem, buf, is_hbw_dequeue); /* free this buffer */
     }
 }
 
@@ -352,8 +339,7 @@ int kupl_bind_memory_to_numa(void *ptr, int node, size_t size)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_mpool_get_numa_id()
+static kupl_always_inline int kupl_mpool_get_numa_id()
 {
     int core_id = sched_getcpu();
     if (core_id < 0) {
@@ -363,8 +349,7 @@ int kupl_mpool_get_numa_id()
     return numa_node_of_cpu(core_id);
 }
 
-static kupl_always_inline
-int kupl_hugepages_mmap(void **ptr, int node, size_t size)
+static kupl_always_inline int kupl_hugepages_mmap(void **ptr, int node, size_t size)
 {
     int ret = KUPL_ERROR;
     struct bitmask *old_mask = numa_get_membind();
@@ -384,8 +369,7 @@ int kupl_hugepages_mmap(void **ptr, int node, size_t size)
     numa_bitmask_setbit(new_mask, (unsigned int)node);
     numa_set_membind(new_mask);
 
-    *ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
-               MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    *ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
 
     if (kupl_likely(*ptr != MAP_FAILED)) {
         ret = KUPL_OK;
@@ -397,10 +381,10 @@ int kupl_hugepages_mmap(void **ptr, int node, size_t size)
     return ret;
 }
 
-static kupl_always_inline
-void* kupl_memory_mmap(size_t size, bool is_hbw_mmap = false, bool is_win_alloc_hugepage = false)
+static kupl_always_inline void *kupl_memory_mmap(size_t size, bool is_hbw_mmap = false,
+                                                 bool is_win_alloc_hugepage = false)
 {
-    void* ptr = nullptr;
+    void *ptr = nullptr;
     thread_local int current_numa_id = kupl_mpool_get_numa_id();
     int is_hugepage_success = KUPL_ERROR;
     if (kupl_unlikely(current_numa_id == KUPL_ERROR)) {
@@ -411,12 +395,10 @@ void* kupl_memory_mmap(size_t size, bool is_hbw_mmap = false, bool is_win_alloc_
         is_hugepage_success = kupl_hugepages_mmap(&ptr, dest_numa_id, size);
         if (is_hugepage_success == KUPL_ERROR) {
             kupl_warn("kupl_memory_mmap use hugepage failed, fallback to malloc normal page.");
-            ptr = (kupl_buffer_desc_t *)mmap(nullptr, size, PROT_READ | PROT_WRITE,
-                                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            ptr = (kupl_buffer_desc_t *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         }
     } else {
-        ptr = (kupl_buffer_desc_t *)mmap(nullptr, size, PROT_READ | PROT_WRITE,
-                                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        ptr = (kupl_buffer_desc_t *)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     }
 
     if (kupl_unlikely(ptr == MAP_FAILED)) {
@@ -432,7 +414,7 @@ void* kupl_memory_mmap(size_t size, bool is_hbw_mmap = false, bool is_win_alloc_
     return ptr;
 }
 
-void* kupl_normal_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = false, bool is_win_alloc_hugepage = false)
+void *kupl_normal_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = false, bool is_win_alloc_hugepage = false)
 {
     kupl_normal_sync_list_dequeue(mem, is_hbw_alloc);
 
@@ -442,7 +424,7 @@ void* kupl_normal_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = fal
     }
     void *ptr = nullptr;
     auto actual = size + sizeof(kupl_buffer_desc_t);
-    actual = (actual + align_length - 1) & (~(align_length - 1));   /* size change to 8 bytes aligned */
+    actual = (actual + align_length - 1) & (~(align_length - 1)); /* size change to 8 bytes aligned */
 
     if (actual > MEM_MAX_SIZE) {
         auto desc = (kupl_buffer_desc_t *)kupl_memory_mmap(actual, is_hbw_alloc, is_win_alloc_hugepage);
@@ -455,7 +437,7 @@ void* kupl_normal_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = fal
         }
 
         desc->eid = mem->eid;
-        desc->mem_bin_index = KUPL_MEMORY_BIN_INDEX_INIT;  /* <0 means this buffer is direct alloc */
+        desc->mem_bin_index = KUPL_MEMORY_BIN_INDEX_INIT; /* <0 means this buffer is direct alloc */
         desc->total_size = (int)actual;
         kupl_list_init(&desc->list);
         desc->ref = 1;
@@ -464,8 +446,8 @@ void* kupl_normal_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = fal
 
 search_bins:
     MEM_STATIS(mem->stats_mem_alloc_count++);
-    for (size_t index = (size_t)kupl_get_bin_index(actual, g_memory_bin_size, MEM_BINS_COUNT);
-        index < MEM_BINS_COUNT; ++index) {
+    for (size_t index = (size_t)kupl_get_bin_index(actual, g_memory_bin_size, MEM_BINS_COUNT); index < MEM_BINS_COUNT;
+         ++index) {
         auto head = &mem->mem_bins[index];
         MEM_STATIS(mem->stats_mem_bin_travel++);
         ptr = kupl_normal_travel_list(mem, head, (int)actual, index);
@@ -474,7 +456,7 @@ search_bins:
         }
     }
 
-    kupl_buffer_desc_t* desc = nullptr;
+    kupl_buffer_desc_t *desc = nullptr;
     desc = (kupl_buffer_desc_t *)kupl_memory_mmap(MEM_CHUNK_GROW_SIZE, is_hbw_alloc, is_win_alloc_hugepage);
     if (kupl_unlikely(desc == nullptr)) {
         return nullptr;
@@ -493,7 +475,7 @@ search_bins:
     auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>((char *)desc + desc->total_size);
     next_desc->prev_free = desc->total_size;
     next_desc->eid = mem->eid;
-    next_desc->total_size = -1;     /* dummy buffer's size must be less then 0, means it is always in using */
+    next_desc->total_size = -1; /* dummy buffer's size must be less then 0, means it is always in using */
 
     if (sdma_mpool_func_init) {
         kupl_mlock(desc, MEM_CHUNK_GROW_SIZE);
@@ -503,8 +485,7 @@ search_bins:
     goto search_bins;
 }
 
-static kupl_always_inline
-void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
+static kupl_always_inline void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
 {
     auto desc = KUPL_BUFF_DESC(ptr);
     kupl_assert(desc->ref > 0);
@@ -528,8 +509,8 @@ void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
         return;
     }
 
-    kupl_assert(desc->total_size < 0);       /* negative size means this buffer is in using */
-    desc->total_size = -desc->total_size;   /* set the real size */
+    kupl_assert(desc->total_size < 0);    /* negative size means this buffer is in using */
+    desc->total_size = -desc->total_size; /* set the real size */
 
     int index = desc->mem_bin_index;
 
@@ -538,7 +519,7 @@ void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
         return;
     }
 
-    if (desc->prev_free != 0) {             /* prev buffer is freed */
+    if (desc->prev_free != 0) { /* prev buffer is freed */
         auto prev_desc = reinterpret_cast<kupl_buffer_desc_t *>((char *)desc - desc->prev_free);
         prev_desc->total_size += desc->total_size;
         kupl_assert(prev_desc->total_size > desc->total_size);
@@ -548,8 +529,8 @@ void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
         desc = prev_desc;
     }
 
-    auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>((char*)desc + desc->total_size);
-    if (next_desc->total_size > 0) {        /* next buffer is freed */
+    auto next_desc = reinterpret_cast<kupl_buffer_desc_t *>((char *)desc + desc->total_size);
+    if (next_desc->total_size > 0) { /* next buffer is freed */
         desc->total_size += next_desc->total_size;
         kupl_list_del(&next_desc->list);
         mem->mem_bins_count[index] -= 1;
@@ -574,8 +555,7 @@ void kupl_normal_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
     return;
 }
 
-static kupl_always_inline
-void kupl_normal_init(kupl_memory_t *mem)
+static kupl_always_inline void kupl_normal_init(kupl_memory_t *mem)
 {
     mem->alloc_chunks = 0;
     mem->mem_sync_list = nullptr;
@@ -585,8 +565,7 @@ void kupl_normal_init(kupl_memory_t *mem)
     }
 }
 
-static kupl_always_inline
-void kupl_normal_cleanup(kupl_memory_t *mem, bool is_hbw_cleanup = false)
+static kupl_always_inline void kupl_normal_cleanup(kupl_memory_t *mem, bool is_hbw_cleanup = false)
 {
     kupl_normal_sync_list_dequeue(mem, is_hbw_cleanup);
 
@@ -597,12 +576,12 @@ void kupl_normal_cleanup(kupl_memory_t *mem, bool is_hbw_cleanup = false)
         while (buffer != head) {
             auto desc = kupl_container_of(buffer, kupl_buffer_desc_t, list);
             if (!MEM_IS_WHOLE_CHUNK(desc)) {
-                buffer = buffer->next;  /* move to next */
+                buffer = buffer->next; /* move to next */
             } else {
                 auto old = buffer;
-                buffer = old->next;   /* move to next */
+                buffer = old->next; /* move to next */
 
-                kupl_list_del(old);  /* free this buffer */
+                kupl_list_del(old); /* free this buffer */
                 mem->mem_bins_count[i] -= 1;
                 if (sdma_mpool_func_init) {
                     kupl_munlock(desc, (size_t)desc->total_size);
@@ -613,9 +592,9 @@ void kupl_normal_cleanup(kupl_memory_t *mem, bool is_hbw_cleanup = false)
     }
 }
 
-static kupl_always_inline
-void* kupl_get_memory_from_normal_memory(kupl_memory_t *mem, size_t actual, int index,
-                                         bool is_hbw_alloc = false, bool is_win_alloc_hugepage = false)
+static kupl_always_inline void *kupl_get_memory_from_normal_memory(kupl_memory_t *mem, size_t actual, int index,
+                                                                   bool is_hbw_alloc = false,
+                                                                   bool is_win_alloc_hugepage = false)
 {
     void *ptr;
 #ifdef KUPL_ONLY_ALLOC_ONE
@@ -651,7 +630,7 @@ void* kupl_get_memory_from_normal_memory(kupl_memory_t *mem, size_t actual, int 
         desc->eid = mem->eid;
         desc->fast_bin_index = index;
         desc->alloc_ptr = alloc_ptr;
-        if (kupl_likely(i > 0)) {    /* the first one we will return to user, so don't put in self list */
+        if (kupl_likely(i > 0)) { /* the first one we will return to user, so don't put in self list */
             kupl_sv_list_put(mem->fast_bins[index].self, buf);
         }
     }
@@ -659,8 +638,8 @@ void* kupl_get_memory_from_normal_memory(kupl_memory_t *mem, size_t actual, int 
     return ptr;
 }
 
-static kupl_always_inline
-void* kupl_fast_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = false, bool is_win_alloc_hugepage = false)
+static kupl_always_inline void *kupl_fast_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = false,
+                                                bool is_win_alloc_hugepage = false)
 {
     void *ptr = nullptr;
     size_t actual = size;
@@ -709,8 +688,7 @@ void* kupl_fast_alloc(kupl_memory_t *mem, size_t size, bool is_hbw_alloc = false
     return ptr;
 }
 
-static kupl_always_inline
-void kupl_fast_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
+static kupl_always_inline void kupl_fast_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
 {
     auto fast_desc = KUPL_FAST_DESC(ptr);
     auto eid = fast_desc->eid;
@@ -754,8 +732,8 @@ void kupl_fast_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
     free_list->other_count = 1;
 
     /* 3.2 push this executor thread's other list to memory owner's sync list */
-    std::atomic<void *> *sync = (is_hbw_free) ? (std::atomic<void *> *)(&(KUPL_HBW_MEM(eid)->fast_bins[index].sync))
-                                              : (std::atomic<void *> *)(&(KUPL_MEM(eid)->fast_bins[index].sync));
+    std::atomic<void *> *sync = (is_hbw_free) ? (std::atomic<void *> *)(&(KUPL_HBW_MEM(eid)->fast_bins[index].sync)) :
+                                                (std::atomic<void *> *)(&(KUPL_MEM(eid)->fast_bins[index].sync));
     auto old_ptr = KUPL_ATOMIC_LD_RLX(sync);
     *(void **)tail = old_ptr;
     while (!KUPL_ATOMIC_CAS_WEA(sync, old_ptr, head)) {
@@ -767,8 +745,7 @@ void kupl_fast_free(kupl_memory_t *mem, void *ptr, bool is_hbw_free = false)
     return;
 }
 
-static kupl_always_inline
-void kupl_fast_init(kupl_memory_t *mem)
+static kupl_always_inline void kupl_fast_init(kupl_memory_t *mem)
 {
     for (unsigned i = 0; i < FAST_BINS_COUNT; ++i) {
         mem->fast_bins[i].self = nullptr;
@@ -779,22 +756,21 @@ void kupl_fast_init(kupl_memory_t *mem)
     }
 }
 
-static kupl_always_inline
-void kupl_fast_cleanup(kupl_memory_t *mem, bool is_hbw_free = false)
+static kupl_always_inline void kupl_fast_cleanup(kupl_memory_t *mem, bool is_hbw_free = false)
 {
     for (unsigned i = 0; i < FAST_BINS_COUNT; ++i) {
         auto bin = &mem->fast_bins[i];
         auto ptr = bin->self;
         while (ptr != nullptr) {
             auto desc = KUPL_FAST_DESC(ptr);
-            ptr = *(void **)ptr;  /* move to next */
+            ptr = *(void **)ptr; /* move to next */
             kupl_normal_free(mem, desc->alloc_ptr, is_hbw_free);
         }
 
         ptr = bin->sync;
         while (ptr != nullptr) {
             auto desc = KUPL_FAST_DESC(ptr);
-            ptr = *(void **)ptr;  /* move to next */
+            ptr = *(void **)ptr; /* move to next */
             kupl_normal_free(mem, desc->alloc_ptr, is_hbw_free);
         }
 
@@ -802,7 +778,7 @@ void kupl_fast_cleanup(kupl_memory_t *mem, bool is_hbw_free = false)
         MEM_STATIS(uint64_t other_count = 0);
         while (ptr != nullptr) {
             auto desc = KUPL_FAST_DESC(ptr);
-            ptr = *(void **)ptr;  /* move to next */
+            ptr = *(void **)ptr; /* move to next */
             auto free_mem = (is_hbw_free) ? KUPL_HBW_MEM(desc->eid) : KUPL_MEM(desc->eid);
             kupl_normal_free(free_mem, desc->alloc_ptr, is_hbw_free);
             MEM_STATIS(other_count++);
@@ -812,8 +788,7 @@ void kupl_fast_cleanup(kupl_memory_t *mem, bool is_hbw_free = false)
     }
 }
 
-static kupl_always_inline
-void kupl_memory_warmup()
+static kupl_always_inline void kupl_memory_warmup()
 {
 #ifdef ENABLE_KUPL_GLIBC_MALLOC
     return;
@@ -823,8 +798,7 @@ void kupl_memory_warmup()
         return;
     }
 
-    void* default_ptr = mmap(nullptr, MEM_CHUNK_GROW_SIZE, PROT_READ | PROT_WRITE,
-                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    void *default_ptr = mmap(nullptr, MEM_CHUNK_GROW_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (default_ptr == MAP_FAILED) {
         return;
     }
@@ -848,8 +822,7 @@ void kupl_memory_warmup()
     }
 }
 
-static kupl_always_inline
-void kupl_memory_pool_free()
+static kupl_always_inline void kupl_memory_pool_free()
 {
     for (int i = 0; i < g_kupl_memory_pool_size; ++i) {
         if (KUPL_MEM(i) != nullptr) {
@@ -907,8 +880,7 @@ bool check_numa_has_hugepages(int nodeId)
     return found_hugepages;
 }
 
-static kupl_always_inline
-void kupl_hugepage_init()
+static kupl_always_inline void kupl_hugepage_init()
 {
     if (!kupl_config_get_value(KUPL_ENABLE_HUGEPAGES)) {
         return;
@@ -962,40 +934,31 @@ void kupl_memory_expand_fini()
     auto mem = KUPL_MEM(g_kupl_memory_pool_size - 1);
     if (mem != nullptr) {
         kupl_fast_cleanup(mem);
-        MEM_STATIS(
-            printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n",
-                    g_kupl_memory_pool_size - 1, mem->stats_fast_self, mem->stats_fast_sync, mem->stats_fast_other);
-        );
+        MEM_STATIS(printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n", g_kupl_memory_pool_size - 1,
+                          mem->stats_fast_self, mem->stats_fast_sync, mem->stats_fast_other););
         kupl_normal_cleanup(mem);
-        MEM_STATIS(
-            printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
-                    g_kupl_memory_pool_size - 1, mem->stats_mem_link_travel, mem->stats_mem_bin_travel,
-                    mem->stats_mem_alloc_count, mem->stats_mem_free_count);
-        );
+        MEM_STATIS(printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
+                          g_kupl_memory_pool_size - 1, mem->stats_mem_link_travel, mem->stats_mem_bin_travel,
+                          mem->stats_mem_alloc_count, mem->stats_mem_free_count););
         free(mem);
     }
 
     auto hbw_mem = KUPL_HBW_MEM(g_kupl_memory_pool_size - 1);
     if (hbw_mem != nullptr) {
         kupl_fast_cleanup(hbw_mem, true);
-        MEM_STATIS(
-            printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n", g_kupl_memory_pool_size - 1,
-                    hbw_mem->stats_fast_self, hbw_mem->stats_fast_sync, hbw_mem->stats_fast_other);
-        );
+        MEM_STATIS(printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n", g_kupl_memory_pool_size - 1,
+                          hbw_mem->stats_fast_self, hbw_mem->stats_fast_sync, hbw_mem->stats_fast_other););
         kupl_normal_cleanup(hbw_mem, true);
-        MEM_STATIS(
-        printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
-                g_kupl_memory_pool_size - 1, hbw_mem->stats_mem_link_travel, hbw_mem->stats_mem_bin_travel,
-                hbw_mem->stats_mem_alloc_count, hbw_mem->stats_mem_free_count);
-        );
+        MEM_STATIS(printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
+                          g_kupl_memory_pool_size - 1, hbw_mem->stats_mem_link_travel, hbw_mem->stats_mem_bin_travel,
+                          hbw_mem->stats_mem_alloc_count, hbw_mem->stats_mem_free_count););
         free(hbw_mem);
     }
 
     g_kupl_memory_pool_size--;
 }
 
-static kupl_always_inline
-int kupl_memory_init()
+static kupl_always_inline int kupl_memory_init()
 {
     const kupl_host_info_t *info = kupl_get_host_info();
     g_kupl_max_memory_pool_size = info->pu_cnt;
@@ -1042,25 +1005,22 @@ int kupl_memory_init()
 
     g_kupl_user_align_config = kupl_config_get_value(KUPL_MPOOL_ALIGN_SIZE);
 
-    kupl_trace("grow :%lu max:%lu chunk:%lu\n",
-                MEM_CHUNK_GROW_SIZE, MEM_MAX_SIZE, MEM_CHUNK_GROW_SIZE - sizeof(kupl_buffer_desc_t));
+    kupl_trace("grow :%lu max:%lu chunk:%lu\n", MEM_CHUNK_GROW_SIZE, MEM_MAX_SIZE,
+               MEM_CHUNK_GROW_SIZE - sizeof(kupl_buffer_desc_t));
     kupl_trace("kupl_buffer_desc :%lu\n", sizeof(kupl_buffer_desc_t));
     kupl_hugepage_init();
     return KUPL_OK;
 }
 
-static kupl_always_inline
-void kupl_memory_fini()
+static kupl_always_inline void kupl_memory_fini()
 {
     /* free fast memory to normal pool */
     for (int i = 0; i < g_kupl_memory_pool_size; ++i) {
         auto mem = KUPL_MEM(i);
         if (mem != nullptr) {
             kupl_fast_cleanup(mem);
-            MEM_STATIS(
-                printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n",
-                        i, mem->stats_fast_self, mem->stats_fast_sync, mem->stats_fast_other);
-            );
+            MEM_STATIS(printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n", i, mem->stats_fast_self,
+                              mem->stats_fast_sync, mem->stats_fast_other););
         }
     }
 
@@ -1069,11 +1029,9 @@ void kupl_memory_fini()
         auto mem = KUPL_MEM(i);
         if (mem != nullptr) {
             kupl_normal_cleanup(mem);
-            MEM_STATIS(
-                printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
-                        i, mem->stats_mem_link_travel, mem->stats_mem_bin_travel,
-                        mem->stats_mem_alloc_count, mem->stats_mem_free_count);
-            );
+            MEM_STATIS(printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n", i,
+                              mem->stats_mem_link_travel, mem->stats_mem_bin_travel, mem->stats_mem_alloc_count,
+                              mem->stats_mem_free_count););
         }
     }
 
@@ -1082,10 +1040,8 @@ void kupl_memory_fini()
         auto mem = KUPL_HBW_MEM(i);
         if (mem != nullptr) {
             kupl_fast_cleanup(mem, true);
-            MEM_STATIS(
-                printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n",
-                       i, mem->stats_fast_self, mem->stats_fast_sync, mem->stats_fast_other);
-            );
+            MEM_STATIS(printf("[Eid %d] fast self:%lu sync:%lu other:%lu\n", i, mem->stats_fast_self,
+                              mem->stats_fast_sync, mem->stats_fast_other););
         }
     }
 
@@ -1094,11 +1050,9 @@ void kupl_memory_fini()
         auto mem = KUPL_HBW_MEM(i);
         if (mem != nullptr) {
             kupl_normal_cleanup(mem, true);
-            MEM_STATIS(
-            printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n",
-                    i, mem->stats_mem_link_travel, mem->stats_mem_bin_travel,
-                    mem->stats_mem_alloc_count, mem->stats_mem_free_count);
-            );
+            MEM_STATIS(printf("[Eid:%d] normal list-travel:%lu bin-travel:%lu alloc:%lu free:%lu\n", i,
+                              mem->stats_mem_link_travel, mem->stats_mem_bin_travel, mem->stats_mem_alloc_count,
+                              mem->stats_mem_free_count););
         }
     }
 
@@ -1107,10 +1061,9 @@ void kupl_memory_fini()
     return;
 }
 
-void* kupl_memory_alloc_inner(size_t size, int geid)
+void *kupl_memory_alloc_inner(size_t size, int geid)
 {
-    if (kupl_unlikely(size == 0 || size > KUPL_MAX_MALLOC_INNER_SIZE
-        || geid < 0 || geid >= g_kupl_memory_pool_size)) {
+    if (kupl_unlikely(size == 0 || size > KUPL_MAX_MALLOC_INNER_SIZE || geid < 0 || geid >= g_kupl_memory_pool_size)) {
         return nullptr;
     }
 
@@ -1123,7 +1076,7 @@ void* kupl_memory_alloc_inner(size_t size, int geid)
     return ptr;
 }
 
-void* kupl_memory_hbw_alloc_inner(size_t size, int geid)
+void *kupl_memory_hbw_alloc_inner(size_t size, int geid)
 {
 #ifdef ENABLE_KUPL_GLIBC_MALLOC
     void *ptr = malloc(size);
@@ -1134,10 +1087,9 @@ void* kupl_memory_hbw_alloc_inner(size_t size, int geid)
     return ptr;
 }
 
-void* kupl_memory_calloc_inner(size_t size, int geid)
+void *kupl_memory_calloc_inner(size_t size, int geid)
 {
-    if (kupl_unlikely(size == 0 || size > KUPL_MAX_MALLOC_INNER_SIZE
-        || geid < 0 || geid >= g_kupl_memory_pool_size)) {
+    if (kupl_unlikely(size == 0 || size > KUPL_MAX_MALLOC_INNER_SIZE || geid < 0 || geid >= g_kupl_memory_pool_size)) {
         return nullptr;
     }
 
@@ -1152,8 +1104,7 @@ void* kupl_memory_calloc_inner(size_t size, int geid)
 
 void kupl_memory_free_inner(void *ptr, int geid)
 {
-    if (kupl_unlikely(ptr == nullptr
-        || geid < 0 || geid >= g_kupl_memory_pool_size)) {
+    if (kupl_unlikely(ptr == nullptr || geid < 0 || geid >= g_kupl_memory_pool_size)) {
         return;
     }
 
@@ -1168,8 +1119,7 @@ void kupl_memory_free_inner(void *ptr, int geid)
 
 void kupl_memory_hbw_free_inner(void *ptr, int geid)
 {
-    if (kupl_unlikely(ptr == nullptr
-        || geid < 0 || geid >= g_kupl_memory_pool_size)) {
+    if (kupl_unlikely(ptr == nullptr || geid < 0 || geid >= g_kupl_memory_pool_size)) {
         return;
     }
 
@@ -1189,13 +1139,13 @@ bool kupl_memory_is_inited()
 
 void *kupl_malloc_hugepages_inner(size_t size, size_t *align_size, int use_hbw)
 {
-    void* ptr;
+    void *ptr;
     if (size == 0) {
         ptr = malloc(0);
         *align_size = 0;
         return ptr;
     }
-	*align_size = ALIGN_TO_PAGE_SIZE(size);
+    *align_size = ALIGN_TO_PAGE_SIZE(size);
     ptr = mmap(NULL, *align_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
     if (kupl_unlikely(ptr == MAP_FAILED)) {
         kupl_error("mmap ptr failed");
@@ -1228,7 +1178,7 @@ void kupl_free_hugepages_inner(void *ptr, size_t align_size)
 
 void *kupl_mpool_malloc_hugepages_inner(size_t size, size_t *align_size, int use_hbw)
 {
-    void* ptr;
+    void *ptr;
     if (size == 0) {
         ptr = malloc(0);
         *align_size = 0;
@@ -1274,7 +1224,7 @@ typedef struct kupl_memory_info {
     uint64_t cookie;
     int sdma_fd;
 } kupl_memory_info_t;
-static std::map<void*, kupl_memory_info_t*> *g_pin_map;
+static std::map<void *, kupl_memory_info_t *> *g_pin_map;
 
 static pin_umem_sdma kupl_sdma_pin_umem = nullptr;
 static unpin_umem_sdma kupl_sdma_unpin_umem = nullptr;
@@ -1312,7 +1262,7 @@ int kupl_mpool_init()
         goto err_memory_init;
     }
     if (sdma_mpool_func_init) {
-        g_pin_map = new (std::nothrow) std::map<void*, kupl_memory_info_t*>;
+        g_pin_map = new (std::nothrow) std::map<void *, kupl_memory_info_t *>;
         if (g_pin_map == nullptr) {
             goto err_map_init;
         }
@@ -1359,7 +1309,7 @@ bool kupl_get_sdma_mpool_func_init()
     return sdma_mpool_func_init;
 }
 
-int kupl_memory_is_pinned(void* addr, size_t count)
+int kupl_memory_is_pinned(void *addr, size_t count)
 {
     if (sdma_mpool_func_init) {
         g_pin_map_lock->lock(g_pin_map_lock);
@@ -1379,7 +1329,7 @@ int kupl_memory_is_pinned(void* addr, size_t count)
     return KUPL_MEMORY_PINNED;
 }
 
-void* kupl_malloc(kupl_mem_kind_t kind, size_t size)
+void *kupl_malloc(kupl_mem_kind_t kind, size_t size)
 {
     if (!g_core_inited && kupl_init() == KUPL_ERROR) {
         return nullptr;
@@ -1389,7 +1339,7 @@ void* kupl_malloc(kupl_mem_kind_t kind, size_t size)
         return nullptr;
     }
 
-    void* ptr = nullptr;
+    void *ptr = nullptr;
     static thread_local int geid = kupl_get_executor_num();
     switch (kind) {
         case KUPL_MEM_LARGE_CAP:
@@ -1452,7 +1402,7 @@ int kupl_mlock(void *buffer, size_t count)
     g_pin_map_lock->lock(g_pin_map_lock);
     auto iter = g_pin_map->find(buffer);
     if (iter == g_pin_map->end()) {
-        kupl_memory_info_t *mem_info = (kupl_memory_info_t*)malloc(sizeof(kupl_memory_info_t));
+        kupl_memory_info_t *mem_info = (kupl_memory_info_t *)malloc(sizeof(kupl_memory_info_t));
         if (mem_info == nullptr) {
             g_pin_map_lock->unlock(g_pin_map_lock);
             return KUPL_ERROR;
@@ -1482,7 +1432,7 @@ int kupl_munlock(void *buffer, size_t count)
     auto iter = g_pin_map->find(buffer);
     if (iter != g_pin_map->end() && iter->second->size == count) {
         kupl_sdma_unpin_umem(iter->second->sdma_fd, iter->second->cookie);
-        free(iter->second);   // free kupl_memory_info_t
+        free(iter->second); // free kupl_memory_info_t
         g_pin_map->erase(iter);
         res = KUPL_OK;
     }

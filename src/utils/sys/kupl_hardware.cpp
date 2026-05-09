@@ -85,8 +85,7 @@ static int kupl_host_info_init_topo_count(hwloc_topology_t *topology)
         goto numas_free;
     }
 
-    g_host_info.numa_distance = (uint64_t *)kupl_calloc(g_host_info.numa_cnt * g_host_info.numa_cnt,
-                                                        sizeof(uint64_t));
+    g_host_info.numa_distance = (uint64_t *)kupl_calloc(g_host_info.numa_cnt * g_host_info.numa_cnt, sizeof(uint64_t));
     if (kupl_unlikely(g_host_info.numa_distance == nullptr)) {
         goto cpus_free;
     }
@@ -102,8 +101,7 @@ topology_destory:
     kupl_log_error_return(ERROR, "kupl host info init by hwloc failed");
 }
 
-static kupl_always_inline
-void kupl_init_every_process(hwloc_topology_t topology)
+static kupl_always_inline void kupl_init_every_process(hwloc_topology_t topology)
 {
     for (int i = 0; i < g_host_info.pu_cnt; ++i) {
         auto obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_PU, i);
@@ -143,11 +141,10 @@ void kupl_init_every_process(hwloc_topology_t topology)
     }
 }
 
-static kupl_always_inline
-void kupl_init_numa_distance(hwloc_topology_t topology)
+static kupl_always_inline void kupl_init_numa_distance(hwloc_topology_t topology)
 {
     if (g_host_info.numa_cnt > 1) {
-    /* get numa distance */
+        /* get numa distance */
 #if HWLOC_API_VERSION >= HWLOC_VERSION_DIVIDE_BY_NUMA_DIS
         hwloc_distances_s *distances;
         unsigned nr = 1;
@@ -198,8 +195,7 @@ int kupl_host_info_init()
         return KUPL_ERROR;
     }
 
-    g_compute_place = (kupl_compute_place_t*)kupl_malloc_inner(sizeof(kupl_compute_place_t) *
-                                                           g_host_info.pu_cnt);
+    g_compute_place = (kupl_compute_place_t *)kupl_malloc_inner(sizeof(kupl_compute_place_t) * g_host_info.pu_cnt);
     if (kupl_unlikely(g_compute_place == nullptr)) {
         kupl_host_info_fini();
         return KUPL_ERROR;
@@ -234,7 +230,7 @@ void kupl_host_info_fini()
     kupl_safe_free(g_compute_place);
 }
 
-const kupl_host_info_t* kupl_get_host_info()
+const kupl_host_info_t *kupl_get_host_info()
 {
     kupl_assert(g_host_info.init);
     return &g_host_info;
@@ -295,15 +291,15 @@ void kupl_host_info_print()
         return;
     }
 
-    printf("Socket count: %d NUMA count: %d Core count: %d PU count: %d\n",
-        g_host_info.socket_cnt, g_host_info.numa_cnt, g_host_info.core_cnt, g_host_info.pu_cnt);
+    printf("Socket count: %d NUMA count: %d Core count: %d PU count: %d\n", g_host_info.socket_cnt,
+           g_host_info.numa_cnt, g_host_info.core_cnt, g_host_info.pu_cnt);
     printf("NUMA distance\n");
     for (int i = 0; i < g_host_info.numa_cnt; ++i) {
         const int buf_len = 1024;
         char strbuf[buf_len];
         size_t offset = 0;
         size_t tot_offset = 0;
-        char* ptr = strbuf;
+        char *ptr = strbuf;
         for (int j = 0; j < g_host_info.numa_cnt; ++j) {
             offset = sprintf(ptr, "\t%lu", g_host_info.numa_distance[i * g_host_info.numa_cnt + j]);
             tot_offset += offset;
@@ -370,7 +366,7 @@ int kupl_host_info_init()
         pthread_getaffinity_np(pthread_self(), sizeof(g_host_info.avail_set), &g_host_info.avail_set);
     } else {
         int max_threads = omp_get_max_threads();
-        for (int i = 0; (i < max_threads) && i < CPU_SETSIZE ; i++) {
+        for (int i = 0; (i < max_threads) && i < CPU_SETSIZE; i++) {
             CPU_SET(i, &g_host_info.avail_set);
         }
     }
@@ -396,7 +392,7 @@ void kupl_host_info_fini()
     return;
 }
 
-const kupl_host_info_t* kupl_get_host_info()
+const kupl_host_info_t *kupl_get_host_info()
 {
     return &g_host_info;
 }
@@ -416,7 +412,7 @@ kupl_arch_type_t kupl_arch_detect()
 {
     kupl_arch_type_t arch_type;
     unsigned long long cpu_id;
-    __asm__ volatile("mrs %0, MIDR_EL1":"=r"(cpu_id));
+    __asm__ volatile("mrs %0, MIDR_EL1" : "=r"(cpu_id));
 
     unsigned long long vendor = (cpu_id >> 0x18) & 0xFF;
     unsigned long long part_id = (cpu_id >> 0x4) & 0xFFF;

@@ -32,8 +32,7 @@ static kupl_pf_t *g_pf = nullptr;
 static kupl_ult_t *g_ult = nullptr;
 constexpr int KUPL_RD_NUM_MAX = 128;
 
-static kupl_always_inline
-kupl_graph_h kupl_pf_graph_get()
+static kupl_always_inline kupl_graph_h kupl_pf_graph_get()
 {
     KUPL_PTRACE_START(KUPL_PTRACE_PARALLEL_FOR_GRAPH_GET);
     kupl_graph_h graph = kupl_get_current_graph();
@@ -51,13 +50,13 @@ static void reduce_buffer(int op, void *buffer, T data)
     switch (op) {
         case KUPL_RD_ADD:
         case KUPL_RD_SUB:
-            *static_cast<T*>(buffer) += data;
+            *static_cast<T *>(buffer) += data;
             break;
         case KUPL_RD_MAX:
-            *static_cast<T*>(buffer) = kupl_max(*static_cast<T*>(buffer), data);
+            *static_cast<T *>(buffer) = kupl_max(*static_cast<T *>(buffer), data);
             break;
         case KUPL_RD_MIN:
-            *static_cast<T*>(buffer) = kupl_min(*static_cast<T*>(buffer), data);
+            *static_cast<T *>(buffer) = kupl_min(*static_cast<T *>(buffer), data);
             break;
         default:
             kupl_error("option: %d not supported", op);
@@ -70,7 +69,7 @@ void reduce_buffer<std::complex<float>>(int op, void *buffer, std::complex<float
     switch (op) {
         case KUPL_RD_ADD:
         case KUPL_RD_SUB:
-            *static_cast<std::complex<float>*>(buffer) += data;
+            *static_cast<std::complex<float> *>(buffer) += data;
             break;
         default:
             kupl_error("option: %d not supported", op);
@@ -83,7 +82,7 @@ void reduce_buffer<std::complex<double>>(int op, void *buffer, std::complex<doub
     switch (op) {
         case KUPL_RD_ADD:
         case KUPL_RD_SUB:
-            *static_cast<std::complex<double>*>(buffer) += data;
+            *static_cast<std::complex<double> *>(buffer) += data;
             break;
         default:
             kupl_error("option: %d not supported", op);
@@ -94,7 +93,7 @@ static void do_reduce(kupl_reduce_args_t *rd_args, kupl_reduce_data_t *rd_data)
 {
     int rd_num = rd_args->num;
     for (int i = 0; i < rd_num; i++) {
-        auto& item = rd_args->items[i];
+        auto &item = rd_args->items[i];
         switch (item.type) {
             case KUPL_DATATYPE_INT:
                 reduce_buffer<int>(item.op, item.buffer, rd_data[i].i);
@@ -117,20 +116,17 @@ static void do_reduce(kupl_reduce_args_t *rd_args, kupl_reduce_data_t *rd_data)
     }
 }
 
-static kupl_always_inline
-void kupl_reduce_post_func(kupl_pf_t &pf, int tid, int tnum)
+static kupl_always_inline void kupl_reduce_post_func(kupl_pf_t &pf, int tid, int tnum)
 {
     if (tid != 0) {
         return;
     }
 
-    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, tnum, eid, eidx, {
-        do_reduce(pf.shared_args, g_pf[eid].rd_data);
-    });
+    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, tnum, eid, eidx, { do_reduce(pf.shared_args, g_pf[eid].rd_data); });
 }
 
-static kupl_always_inline
-int get_max_range_dim(kupl_nd_range_t& range) {
+static kupl_always_inline int get_max_range_dim(kupl_nd_range_t &range)
+{
     int64_t max_chunks = 0;
     int dim_of_max = 0;
     for (int i = 0; i < range.dim; i++) {
@@ -145,8 +141,8 @@ int get_max_range_dim(kupl_nd_range_t& range) {
 }
 
 typedef struct kupl_task_args {
-    int64_t                 task_id;
-    int                     master_eid;
+    int64_t task_id;
+    int master_eid;
 } kupl_task_args_t;
 
 static void task_policy_loop_func(void *args)
@@ -190,21 +186,19 @@ static void task_policy_loop_func(void *args)
 
 int kupl_invoke_parallel(kupl_parallel_func_t func, void *args, int num_threads)
 {
-    kupl_parallel_for_desc_t desc = {
-        .field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
-        .range = nullptr,
-        .egroup = nullptr,
-        .concurrency = num_threads,
-        .policy = KUPL_LOOP_POLICY_STATIC
-    };
+    kupl_parallel_for_desc_t desc = {.field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT,
+                                     .range = nullptr,
+                                     .egroup = nullptr,
+                                     .concurrency = num_threads,
+                                     .policy = KUPL_LOOP_POLICY_STATIC};
     return kupl::parallel_for(&desc, [&](const kupl_nd_range_t *nd_range, const int tid, const int tnum) {
         (void)nd_range;
         func(args, tid, tnum);
     });
 }
 
-static kupl_always_inline
-kupl_reduce_args_t *kupl_reduce_args_dup_impl(kupl_reduce_args_t *rd_args, kupl_pf_t &own_pf, int geid)
+static kupl_always_inline kupl_reduce_args_t *kupl_reduce_args_dup_impl(kupl_reduce_args_t *rd_args, kupl_pf_t &own_pf,
+                                                                        int geid)
 {
     static constexpr int INIT_INT[4] = {0, 0, INT_MIN, INT_MAX};
     static constexpr float INIT_FLOAT[4] = {0.0f, 0.0f, -FLT_MAX, FLT_MAX};
@@ -272,9 +266,9 @@ static void kupl_no_range_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int
     pf.func(nullptr, pf.args, tid, tnum);
 }
 
-template<typename CallFunc>
-static kupl_always_inline
-void kupl_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum, CallFunc call)
+template <typename CallFunc>
+static kupl_always_inline void kupl_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum,
+                                                       CallFunc call)
 {
     range.dim = pf.range->dim;
     auto &nd_range = range.nd_range[0];
@@ -302,9 +296,7 @@ void kupl_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int
 
 static void kupl_static_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
 {
-    kupl_static_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.func(&range, pf.args, tid, tnum);
-    });
+    kupl_static_policy_impl(range, pf, tid, tnum, [&]() { pf.func(&range, pf.args, tid, tnum); });
 }
 
 static void kupl_reduce_static_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
@@ -313,12 +305,11 @@ static void kupl_reduce_static_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf
     if (kupl_unlikely(private_args == nullptr)) {
         return;
     }
-    kupl_static_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.rd_func(&range, pf.args, tid, tnum, private_args);
-    });
+    kupl_static_policy_impl(range, pf, tid, tnum, [&]() { pf.rd_func(&range, pf.args, tid, tnum, private_args); });
 }
 
-static void divide_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t target_tid, int64_t head_tid, int64_t num_threads)
+static void divide_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t target_tid, int64_t head_tid,
+                         int64_t num_threads)
 {
     // the end condition, divide to only one num_threads
     if (num_threads == 1 && target_tid == head_tid) {
@@ -345,9 +336,9 @@ static void divide_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t target_t
     }
 }
 
-template<typename CallFunc>
-static kupl_always_inline
-void kupl_nd_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum, CallFunc call)
+template <typename CallFunc>
+static kupl_always_inline void kupl_nd_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum,
+                                                          CallFunc call)
 {
     range = *pf.range;
     divide_range(range, pf, (int64_t)tid, 0, (int64_t)tnum);
@@ -356,9 +347,7 @@ void kupl_nd_static_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, 
 
 static void kupl_nd_static_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
 {
-    kupl_nd_static_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.func(&range, pf.args, tid, tnum);
-    });
+    kupl_nd_static_policy_impl(range, pf, tid, tnum, [&]() { pf.func(&range, pf.args, tid, tnum); });
 }
 
 static void kupl_reduce_nd_static_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
@@ -367,13 +356,10 @@ static void kupl_reduce_nd_static_policy_func(kupl_nd_range_t &range, kupl_pf_t 
     if (kupl_unlikely(private_args == nullptr)) {
         return;
     }
-    kupl_nd_static_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.rd_func(&range, pf.args, tid, tnum, private_args);
-    });
+    kupl_nd_static_policy_impl(range, pf, tid, tnum, [&]() { pf.rd_func(&range, pf.args, tid, tnum, private_args); });
 }
 
-static kupl_always_inline
-void kupl_compute_chunk_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t chunk_idx)
+static kupl_always_inline void kupl_compute_chunk_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t chunk_idx)
 {
     int64_t ci = chunk_idx;
     for (int d = range.dim - 1; d >= 0; d--) {
@@ -382,18 +368,16 @@ void kupl_compute_chunk_range(kupl_nd_range_t &range, kupl_pf_t &pf, int64_t chu
         int64_t chunksize = pf.chunk_info[d].chunksize;
         range.nd_range[d].lower = pf.range->nd_range[d].lower + nd_index * chunksize;
         if (chunksize > 0) {
-            range.nd_range[d].upper = kupl_min(range.nd_range[d].lower + chunksize,
-                                               pf.range->nd_range[d].upper);
+            range.nd_range[d].upper = kupl_min(range.nd_range[d].lower + chunksize, pf.range->nd_range[d].upper);
         } else {
-            range.nd_range[d].upper = kupl_max(range.nd_range[d].lower + chunksize,
-                                               pf.range->nd_range[d].upper);
+            range.nd_range[d].upper = kupl_max(range.nd_range[d].lower + chunksize, pf.range->nd_range[d].upper);
         }
     }
 }
 
-template<typename CallFunc>
-static kupl_always_inline
-void kupl_dynamic_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum, CallFunc call)
+template <typename CallFunc>
+static kupl_always_inline void kupl_dynamic_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum,
+                                                        CallFunc call)
 {
     range = *pf.range;
     int target_tid = tid;
@@ -417,9 +401,7 @@ void kupl_dynamic_policy_impl(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, in
 
 static void kupl_dynamic_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
 {
-    kupl_dynamic_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.func(&range, pf.args, tid, tnum);
-    });
+    kupl_dynamic_policy_impl(range, pf, tid, tnum, [&]() { pf.func(&range, pf.args, tid, tnum); });
 }
 
 static void kupl_reduce_dynamic_policy_func(kupl_nd_range_t &range, kupl_pf_t &pf, int tid, int tnum)
@@ -428,13 +410,10 @@ static void kupl_reduce_dynamic_policy_func(kupl_nd_range_t &range, kupl_pf_t &p
     if (kupl_unlikely(private_args == nullptr)) {
         return;
     }
-    kupl_dynamic_policy_impl(range, pf, tid, tnum, [&]() {
-        pf.rd_func(&range, pf.args, tid, tnum, private_args);
-    });
+    kupl_dynamic_policy_impl(range, pf, tid, tnum, [&]() { pf.rd_func(&range, pf.args, tid, tnum, private_args); });
 }
 
-static kupl_always_inline
-void kupl_task_reduce_buffers_init(kupl_pf_t &pf)
+static kupl_always_inline void kupl_task_reduce_buffers_init(kupl_pf_t &pf)
 {
     KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, {
         g_pf[eid].master_eid = pf.master_eid;
@@ -442,8 +421,7 @@ void kupl_task_reduce_buffers_init(kupl_pf_t &pf)
     });
 }
 
-static kupl_always_inline
-void kupl_calc_chunk_info(kupl_pf_t &pf)
+static kupl_always_inline void kupl_calc_chunk_info(kupl_pf_t &pf)
 {
     int64_t total_chunks = 1;
     auto &nd_range = pf.range->nd_range;
@@ -459,9 +437,8 @@ void kupl_calc_chunk_info(kupl_pf_t &pf)
     pf.total_chunks = total_chunks;
 }
 
-template<typename SetupFunc, typename FinalFunc>
-static kupl_always_inline
-int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc setup, FinalFunc final)
+template <typename SetupFunc, typename FinalFunc>
+static kupl_always_inline int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc setup, FinalFunc final)
 {
     auto graph = kupl_pf_graph_get();
     if (kupl_unlikely(graph == nullptr)) {
@@ -484,23 +461,15 @@ int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc setup, FinalFunc final)
     KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, {
         int64_t num_tasks = base_chunks + (eidx < remain_chunks);
         for (int64_t j = 0; j < num_tasks; j++) {
-            kupl_tb_desc_t user_desc = {
-                .field_mask     = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-                .func           = task_policy_loop_func,
-                .args           = nullptr,
-                .executor_id    = (int)eid
-            };
+            kupl_tb_desc_t user_desc = {.field_mask = KUPL_TB_DESC_FIELD_EXECUTOR_ID,
+                                        .func = task_policy_loop_func,
+                                        .args = nullptr,
+                                        .executor_id = (int)eid};
             kupl_task_param_t task_param = {
-                .super = {
-                    .type       = KUPL_TB_TYPE_TASK,
-                    .user_desc  = &user_desc,
-                    .graph      = graph,
-                    .count      = &task_cnt_ref
-                },
-                .kind           = KUPL_TASK_KIND_COMM_DYNAMIC,
-                .inplace        = nullptr,
-                .udata_size     = sizeof(kupl_task_args_t)
-            };
+                .super = {.type = KUPL_TB_TYPE_TASK, .user_desc = &user_desc, .graph = graph, .count = &task_cnt_ref},
+                .kind = KUPL_TASK_KIND_COMM_DYNAMIC,
+                .inplace = nullptr,
+                .udata_size = sizeof(kupl_task_args_t)};
             kupl_task_h task = kupl_task_init(&task_param, geid);
             if (kupl_unlikely(task == nullptr)) {
                 kupl_error("task create failed");
@@ -509,7 +478,7 @@ int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc setup, FinalFunc final)
             }
 
             task->tb.args = task->udata;
-            auto args = reinterpret_cast<kupl_task_args_t*>(task->udata);
+            auto args = reinterpret_cast<kupl_task_args_t *>(task->udata);
             args->task_id = task_id;
             args->master_eid = pf.master_eid;
 
@@ -530,15 +499,13 @@ int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc setup, FinalFunc final)
 
 static int kupl_task_policy_func(kupl_pf_t &pf)
 {
-    return kupl_task_policy_impl(pf, [](){}, [](){});
+    return kupl_task_policy_impl(pf, []() {}, []() {});
 }
 
 static int kupl_reduce_task_policy_func(kupl_pf_t &pf)
 {
-    return kupl_task_policy_impl(pf,
-        [&]() { kupl_task_reduce_buffers_init(pf); },
-        [&]() { kupl_reduce_post_func(pf, 0, pf.num_threads); }
-    );
+    return kupl_task_policy_impl(
+        pf, [&]() { kupl_task_reduce_buffers_init(pf); }, [&]() { kupl_reduce_post_func(pf, 0, pf.num_threads); });
 }
 
 static void kupl_loop_func(void *args)
@@ -564,8 +531,7 @@ static void kupl_loop_func(void *args)
     call_cnt--;
 }
 
-static kupl_always_inline
-void kupl_static_policy_prepare(kupl_pf_t &pf)
+static kupl_always_inline void kupl_static_policy_prepare(kupl_pf_t &pf)
 {
     kupl_calc_chunk_info(pf);
     if (pf.range != nullptr && pf.range->dim == 1) {
@@ -575,8 +541,7 @@ void kupl_static_policy_prepare(kupl_pf_t &pf)
     }
 }
 
-static kupl_always_inline
-void kupl_dynamic_policy_prepare_common(kupl_pf_t &pf)
+static kupl_always_inline void kupl_dynamic_policy_prepare_common(kupl_pf_t &pf)
 {
     kupl_calc_chunk_info(pf);
     auto chunks_per_thread = pf.total_chunks / (int64_t)pf.num_threads;
@@ -588,15 +553,13 @@ void kupl_dynamic_policy_prepare_common(kupl_pf_t &pf)
     }
 }
 
-static kupl_always_inline
-void kupl_dynamic_policy_prepare(kupl_pf_t &pf)
+static kupl_always_inline void kupl_dynamic_policy_prepare(kupl_pf_t &pf)
 {
     kupl_dynamic_policy_prepare_common(pf);
     pf.policy_func = kupl_dynamic_policy_func;
 }
 
-static kupl_always_inline
-void kupl_reduce_static_policy_prepare(kupl_pf_t &pf)
+static kupl_always_inline void kupl_reduce_static_policy_prepare(kupl_pf_t &pf)
 {
     kupl_calc_chunk_info(pf);
     if (pf.range->dim == 1) {
@@ -607,16 +570,14 @@ void kupl_reduce_static_policy_prepare(kupl_pf_t &pf)
     pf.post_func = kupl_reduce_post_func;
 }
 
-static kupl_always_inline
-void kupl_reduce_dynamic_policy_prepare(kupl_pf_t &pf)
+static kupl_always_inline void kupl_reduce_dynamic_policy_prepare(kupl_pf_t &pf)
 {
     kupl_dynamic_policy_prepare_common(pf);
     pf.policy_func = kupl_reduce_dynamic_policy_func;
     pf.post_func = kupl_reduce_post_func;
 }
 
-static kupl_always_inline
-void kupl_reduce_policy_prepare(kupl_pf_t &pf)
+static kupl_always_inline void kupl_reduce_policy_prepare(kupl_pf_t &pf)
 {
     if (pf.range == nullptr) {
         pf.policy_func = kupl_reduce_no_range_policy_func;
@@ -648,7 +609,7 @@ static int kupl_omp_parallel(kupl_pf_t &pf)
         local_range = *pf.range;
     }
 
-    #pragma omp parallel for num_threads(pf.num_threads) private(local_range)
+#pragma omp parallel for num_threads(pf.num_threads) private(local_range)
     for (int i = 0; i < pf.num_threads; ++i) {
         call_cnt++;
         int geid = kupl_get_executor_num();
@@ -664,20 +625,19 @@ static int kupl_omp_parallel(kupl_pf_t &pf)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_parallel_for_check(kupl_parallel_for_desc_t *desc, void *func)
+static kupl_always_inline int kupl_parallel_for_check(kupl_parallel_for_desc_t *desc, void *func)
 {
     KUPL_PTRACE_START(KUPL_PTRACE_PARALLEL_FOR_CHECK);
     if (kupl_unlikely(func == nullptr || desc == nullptr ||
-                      (desc->field_mask & KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT) != KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT)) {
+                      (desc->field_mask & KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT) !=
+                          KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT)) {
         return kupl_log_error_return(ERROR, "Invalid parameter");
     }
     auto range = desc->range;
     auto policy = desc->policy;
     if (range != nullptr) {
         if ((policy == KUPL_LOOP_POLICY_TASK && range->dim != 1) ||
-            (policy != KUPL_LOOP_POLICY_STATIC &&
-             policy != KUPL_LOOP_POLICY_DYNAMIC &&
+            (policy != KUPL_LOOP_POLICY_STATIC && policy != KUPL_LOOP_POLICY_DYNAMIC &&
              policy != KUPL_LOOP_POLICY_TASK)) {
             return kupl_log_error_return(ERROR, "kupl not support current policy or dim yet!");
         }
@@ -713,13 +673,12 @@ int kupl_parallel_for_check(kupl_parallel_for_desc_t *desc, void *func)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_parallel_for_num_threads(kupl_parallel_for_desc_t *desc, kupl_egroup_h egroup)
+static kupl_always_inline int kupl_parallel_for_num_threads(kupl_parallel_for_desc_t *desc, kupl_egroup_h egroup)
 {
     KUPL_PTRACE_START(KUPL_PTRACE_PARALLEL_FOR_NUM_THREADS);
     int num_threads = desc->concurrency;
     auto range = desc->range;
-    if (range != nullptr) {   // include no range condition
+    if (range != nullptr) { // include no range condition
         int total_chunks = 1;
         for (int i = 0; i < range->dim; i++) {
             int64_t lower = range->nd_range[i].lower;
@@ -799,9 +758,7 @@ int kupl_parallel_for(kupl_parallel_for_desc_t *desc, kupl_pf_func_t func, void 
         barrier.wait(pf.egroup, pf.num_threads);
     }
 
-    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, {
-        g_pf[eid].master_eid = master_eid;
-    });
+    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, { g_pf[eid].master_eid = master_eid; });
 
     // 2. notify target threads to execute ult
     barrier.notify(pf.egroup, pf.num_threads);
@@ -814,20 +771,18 @@ int kupl_parallel_for(kupl_parallel_for_desc_t *desc, kupl_pf_func_t func, void 
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_reduce_check(kupl_parallel_for_desc_t *desc, void *func, kupl_reduce_args_t *rd_args)
+static kupl_always_inline int kupl_reduce_check(kupl_parallel_for_desc_t *desc, void *func, kupl_reduce_args_t *rd_args)
 {
     if (kupl_unlikely(kupl_parallel_for_check(desc, func) == KUPL_ERROR)) {
         return KUPL_ERROR;
     }
 
-    if (kupl_unlikely((rd_args == nullptr) || (rd_args->num <= 0) ||
-        (rd_args->num > KUPL_RD_NUM_MAX) || (rd_args->items == nullptr))) {
+    if (kupl_unlikely((rd_args == nullptr) || (rd_args->num <= 0) || (rd_args->num > KUPL_RD_NUM_MAX) ||
+                      (rd_args->items == nullptr))) {
         return KUPL_ERROR;
     }
-    if (kupl_unlikely(desc->policy != KUPL_LOOP_POLICY_STATIC &&
-                       desc->policy != KUPL_LOOP_POLICY_DYNAMIC &&
-                       desc->policy != KUPL_LOOP_POLICY_TASK)) {
+    if (kupl_unlikely(desc->policy != KUPL_LOOP_POLICY_STATIC && desc->policy != KUPL_LOOP_POLICY_DYNAMIC &&
+                      desc->policy != KUPL_LOOP_POLICY_TASK)) {
         kupl_error("Invalid policy: %d, only STATIC, DYNAMIC and TASK supported for reduce", desc->policy);
         return KUPL_ERROR;
     }
@@ -843,9 +798,9 @@ int kupl_reduce_check(kupl_parallel_for_desc_t *desc, void *func, kupl_reduce_ar
             return KUPL_ERROR;
         }
         if (kupl_unlikely((op == KUPL_RD_MAX && type == KUPL_DATATYPE_FLOAT_COMPLEX) ||
-            (op == KUPL_RD_MIN && type == KUPL_DATATYPE_FLOAT_COMPLEX) ||
-            (op == KUPL_RD_MAX && type == KUPL_DATATYPE_DOUBLE_COMPLEX) ||
-            (op == KUPL_RD_MIN && type == KUPL_DATATYPE_DOUBLE_COMPLEX))) {
+                          (op == KUPL_RD_MIN && type == KUPL_DATATYPE_FLOAT_COMPLEX) ||
+                          (op == KUPL_RD_MAX && type == KUPL_DATATYPE_DOUBLE_COMPLEX) ||
+                          (op == KUPL_RD_MIN && type == KUPL_DATATYPE_DOUBLE_COMPLEX))) {
             kupl_error("complex type do not support min max op.");
             return KUPL_ERROR;
         }
@@ -854,7 +809,7 @@ int kupl_reduce_check(kupl_parallel_for_desc_t *desc, void *func, kupl_reduce_ar
 }
 
 int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func_t func, void *args,
-    kupl_reduce_args_t *rd_args)
+                             kupl_reduce_args_t *rd_args)
 {
     if (!g_core_inited && kupl_init() == KUPL_ERROR) {
         return KUPL_ERROR;
@@ -910,9 +865,7 @@ int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func
         return kupl_omp_parallel(pf);
     }
 
-    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, {
-        g_pf[eid].master_eid = master_eid;
-    });
+    KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, { g_pf[eid].master_eid = master_eid; });
 
     // 2. notify target threads to execute ult
     auto &barrier = kupl::FlagBarrier::getInstance();
@@ -969,20 +922,21 @@ static int kupl_global_ult_init(int num_threads)
     for (int i = 0; i < num_threads; i++) {
         kupl_ult_desc_t ult_desc = {
             .field_mask = KUPL_TB_DESC_FIELD_FLAG | KUPL_TB_DESC_FIELD_EXECUTOR_ID,
-            .func       = kupl_loop_func,
-            .args       = nullptr,
-            .flag       = KUPL_TB_FLAG_HYBRID_OUTER,
+            .func = kupl_loop_func,
+            .args = nullptr,
+            .flag = KUPL_TB_FLAG_HYBRID_OUTER,
             .executor_id = i,
         };
         kupl_ult_param_t param = {
-            .super = {
-                .type           = KUPL_TB_TYPE_ULT,
-                .user_desc      = &ult_desc,
-                .graph          = nullptr,
-                .count          = nullptr,
-            },
-            .kind               = KUPL_ULT_KIND_COMM_DYNAMIC,
-            .inplace            = &g_ult[i],
+            .super =
+                {
+                    .type = KUPL_TB_TYPE_ULT,
+                    .user_desc = &ult_desc,
+                    .graph = nullptr,
+                    .count = nullptr,
+                },
+            .kind = KUPL_ULT_KIND_COMM_DYNAMIC,
+            .inplace = &g_ult[i],
         };
         kupl_ult_init(&param, 0);
 
@@ -1008,8 +962,8 @@ int kupl_pf_init()
         goto err;
     }
     for (int i = 0; i < num_threads; i++) {
-        g_pf[i].chunk_index = (kupl_pf::aligned_index *)kupl_calloc(sizeof(kupl_pf::aligned_index),
-                                                                    (size_t)num_threads);
+        g_pf[i].chunk_index =
+            (kupl_pf::aligned_index *)kupl_calloc(sizeof(kupl_pf::aligned_index), (size_t)num_threads);
         if (kupl_unlikely(g_pf[i].chunk_index == nullptr)) {
             goto err;
         }
@@ -1048,15 +1002,15 @@ void kupl_pf_fini()
 }
 
 namespace kupl {
-    static void lambda_pf_func(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
-    {
-        pf_lambda *func = (pf_lambda *)args;
-        (*func)(nd_range, tid, tnum);
-    }
-
-    int parallel_for(kupl_parallel_for_desc_t *desc, const pf_lambda &func)
-    {
-        pf_lambda* func_ptr = const_cast<pf_lambda*>(static_cast<const pf_lambda*>(&func));
-        return kupl_parallel_for(desc, lambda_pf_func, func_ptr);
-    }
+static void lambda_pf_func(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    pf_lambda *func = (pf_lambda *)args;
+    (*func)(nd_range, tid, tnum);
 }
+
+int parallel_for(kupl_parallel_for_desc_t *desc, const pf_lambda &func)
+{
+    pf_lambda *func_ptr = const_cast<pf_lambda *>(static_cast<const pf_lambda *>(&func));
+    return kupl_parallel_for(desc, lambda_pf_func, func_ptr);
+}
+} // namespace kupl

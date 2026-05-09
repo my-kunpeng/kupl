@@ -26,7 +26,7 @@
 thread_local int current_cpu = -1;
 
 typedef struct kupl_hbw_info {
-    size_t    size;
+    size_t size;
 } kupl_hbw_info_t;
 
 int g_min_dist_nodes[KUPL_NUMA_MAX];
@@ -84,8 +84,7 @@ int kupl_hbw_init()
         int min_distance = DISTANCE_MAX;
         for (int dest_node = 0; dest_node < info->numa_cnt; dest_node++) {
             int dist = numa_distance(init_node, dest_node);
-            if (numa_bitmask_isbitset(hbw_node_mask, static_cast<unsigned int>(dest_node)) &&
-                dist < min_distance) {
+            if (numa_bitmask_isbitset(hbw_node_mask, static_cast<unsigned int>(dest_node)) && dist < min_distance) {
                 min_distance = dist;
                 g_min_dist_nodes[init_node] = dest_node;
             }
@@ -132,8 +131,7 @@ int kupl_hbw_verify_inner(void *addr, size_t size, int flags)
     }
 
     if (size > MAX_ALLOC_SIZE) {
-        kupl_error("Unable to verify memory larger than 4GB.")
-        return KUPL_HBW_VERIFY_ERROR;
+        kupl_error("Unable to verify memory larger than 4GB.") return KUPL_HBW_VERIFY_ERROR;
     }
 
     long page_size_tmp = sysconf(_SC_PAGESIZE);
@@ -155,8 +153,8 @@ int kupl_hbw_verify_inner(void *addr, size_t size, int flags)
         return KUPL_HBW_VERIFY_ERROR;
     }
 
-    int *nodes = (int *) malloc(sizeof(int) * page_count);
-    void **pages = (void **) malloc(sizeof(void*) * page_count);
+    int *nodes = (int *)malloc(sizeof(int) * page_count);
+    void **pages = (void **)malloc(sizeof(void *) * page_count);
     if ((nodes == nullptr) || (pages == nullptr)) {
         kupl_error("kupl_hbw_verify inner malloc error.");
         goto kupl_hbw_verify_ret;
@@ -211,22 +209,21 @@ int kupl_hbw_set_policy(kupl_hbw_policy_t policy)
     return KUPL_OK;
 }
 
-void* kupl_hbw_malloc_bind(size_t size)
+void *kupl_hbw_malloc_bind(size_t size)
 {
     int geid = kupl_get_executor_num();
     if (kupl_unlikely(geid < 0 || geid >= g_kupl_memory_pool_size)) {
         kupl_error("kupl_hbw_malloc invalid geid: %d", geid);
         return nullptr;
     }
-    void* ptr = kupl_memory_hbw_alloc_inner(size, geid);
+    void *ptr = kupl_memory_hbw_alloc_inner(size, geid);
     if (ptr == nullptr) {
-        kupl_error("kupl_hbw_malloc bind policy: Unable to malloc memory.")
-        return nullptr;
+        kupl_error("kupl_hbw_malloc bind policy: Unable to malloc memory.") return nullptr;
     }
     return ptr;
 }
 
-void* kupl_hbw_malloc(size_t size)
+void *kupl_hbw_malloc(size_t size)
 {
     if (!g_core_inited && kupl_init() == KUPL_ERROR) {
         return nullptr;
@@ -246,7 +243,7 @@ void* kupl_hbw_malloc(size_t size)
         return nullptr;
     }
 
-    void* ptr;
+    void *ptr;
     switch (global_hbw_policy) {
         case KUPL_HBW_POLICY_BIND:
             ptr = kupl_hbw_malloc_bind(size);

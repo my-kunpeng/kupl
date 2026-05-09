@@ -14,7 +14,7 @@
 #include "ticket_array_lock/kupl_ticket_array_lock.h"
 #include "utils/debug/kupl_assert.h"
 
-typedef kupl_lock_t* (*kupl_lock_init_t)();
+typedef kupl_lock_t *(*kupl_lock_init_t)();
 typedef void (*kupl_lock_fini_t)(kupl_lock_t *lock);
 struct kupl_lock_build_table {
     kupl_lock_type_t type;
@@ -24,11 +24,11 @@ struct kupl_lock_build_table {
 
 /** @note the order must be same with @ref kupl_lock_type_t */
 static kupl_lock_build_table g_tables[] = {
-    { PTHREAD_SPINLOCK, kupl_pthread_spinlock_init, kupl_pthread_spinlock_fini },
-    { TICKET_ARRAY_LOCK, kupl_ticket_array_lock_init, kupl_ticket_array_lock_fini },
+    {PTHREAD_SPINLOCK, kupl_pthread_spinlock_init, kupl_pthread_spinlock_fini},
+    {TICKET_ARRAY_LOCK, kupl_ticket_array_lock_init, kupl_ticket_array_lock_fini},
 };
 
-kupl_lock_t* kupl_lock_create(kupl_lock_type_t type)
+kupl_lock_t *kupl_lock_create(kupl_lock_type_t type)
 {
     kupl_assert(g_tables[type].type == type);
     return g_tables[type].init();

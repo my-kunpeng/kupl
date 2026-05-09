@@ -16,7 +16,6 @@
 #include "memory/shm/kupl_shm.h"
 #include "utils/config/kupl_config.h"
 
-
 int kupl_fence_linear_create(kupl_fence_h fence)
 {
     (void)fence;

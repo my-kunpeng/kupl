@@ -28,7 +28,7 @@ void kupl_time_fini(void);
 
 uint64_t kupl_now_ns();
 
-void kupl_timestamp(char* buffer, size_t buffersize);
+void kupl_timestamp(char *buffer, size_t buffersize);
 
 #ifdef __cplusplus
 }

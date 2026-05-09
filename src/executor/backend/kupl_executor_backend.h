@@ -36,11 +36,11 @@ typedef int (*kupl_backend_base_set_gcid)(int gcid);
 typedef int (*kupl_backend_base_get_gcid)(void);
 
 typedef struct kupl_executor_ops {
-    kupl_backend_base_init             init;
-    kupl_backend_base_fini             fini;
-    kupl_backend_base_setaffinity      set_affinity; // set affinity
-    kupl_backend_base_set_geid         set_geid; // set global executor id
-    kupl_backend_base_get_geid         get_geid; // get global executor id
+    kupl_backend_base_init init;
+    kupl_backend_base_fini fini;
+    kupl_backend_base_setaffinity set_affinity; // set affinity
+    kupl_backend_base_set_geid set_geid;        // set global executor id
+    kupl_backend_base_get_geid get_geid;        // get global executor id
 } kupl_executor_ops_t;
 
 void kupl_backend_type_select(void);

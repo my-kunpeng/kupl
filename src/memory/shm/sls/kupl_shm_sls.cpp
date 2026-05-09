@@ -26,8 +26,7 @@
 static int g_kupl_shm_sls_use_hbw = 0;
 static int g_kupl_shm_sls_use_hugepage = 0;
 
-static kupl_always_inline
-long kupl_shm_sls_bind_to_hbw()
+static kupl_always_inline long kupl_shm_sls_bind_to_hbw()
 {
     int cpu = sched_getcpu();
     int hbw_node = numa_node_of_cpu(cpu) + 16;
@@ -37,8 +36,7 @@ long kupl_shm_sls_bind_to_hbw()
     return set_mempolicy(MPOL_BIND, &nodemask, maxnode);
 }
 
-static kupl_always_inline
-long kupl_shm_sls_unbind_to_hbw()
+static kupl_always_inline long kupl_shm_sls_unbind_to_hbw()
 {
     int cpu = sched_getcpu();
     int ddr_node = numa_node_of_cpu(cpu);
@@ -48,8 +46,7 @@ long kupl_shm_sls_unbind_to_hbw()
     return set_mempolicy(MPOL_BIND, &nodemask, maxnode);
 }
 
-static kupl_always_inline
-int kupl_shm_sls_get_fd()
+static kupl_always_inline int kupl_shm_sls_get_fd()
 {
     kupl_shm_sls_slfs_t res;
     int ret = kupl_shm_sls_init_fs(res);
@@ -68,31 +65,28 @@ static int kupl_shm_sls_allgather_addr(size_t size, void *baseptr, kupl_shm_win_
     kupl_shm_sls_slfs_t slfs;
     int ret = KUPL_ERROR;
 
-    sls_params_list = (kupl_shm_sls_params_t *)kupl_malloc_inner(sizeof(kupl_shm_sls_params_t) *
-                                                                 (size_t)numprocs);
+    sls_params_list = (kupl_shm_sls_params_t *)kupl_malloc_inner(sizeof(kupl_shm_sls_params_t) * (size_t)numprocs);
     if (sls_params_list == nullptr) {
         kupl_error("sls_params_list malloc failed");
         return KUPL_ERROR;
     }
 
     /* set sls params list */
-    sls_params_list[myid].fd   = kupl_shm_sls_get_fd();
-    sls_params_list[myid].pid  = getpid();
+    sls_params_list[myid].fd = kupl_shm_sls_get_fd();
+    sls_params_list[myid].pid = getpid();
     sls_params_list[myid].addr = baseptr;
     sls_params_list[myid].size = size;
 
     oob_allgather = win->comm->oob_allgather;
-    oob_allgather(nullptr, sls_params_list, sizeof(kupl_shm_sls_params_t), win->comm->group,
-                  KUPL_SHM_DATATYPE_CHAR);
+    oob_allgather(nullptr, sls_params_list, sizeof(kupl_shm_sls_params_t), win->comm->group, KUPL_SHM_DATATYPE_CHAR);
 
     void *attach_addr;
     void *base_addr;
     for (int i = 0; i < numprocs; i++) {
         if (myid != i) {
-            ret = kupl_shm_sls_zcopy_all(sls_params_list[myid].fd, sls_params_list[i].addr,
-                                         &attach_addr,
-                                         sls_params_list[i].pid, sls_params_list[myid].pid,
-                                         sls_params_list[i].size, &base_addr, slfs);
+            ret = kupl_shm_sls_zcopy_all(sls_params_list[myid].fd, sls_params_list[i].addr, &attach_addr,
+                                         sls_params_list[i].pid, sls_params_list[myid].pid, sls_params_list[i].size,
+                                         &base_addr, slfs);
             if (ret == KUPL_ERROR) {
                 kupl_error("kupl_shm_sls_zcopy_all failed");
                 goto free_sls_params_list;
@@ -137,8 +131,7 @@ int kupl_shm_sls_finalize()
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_sls_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_sls_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_insert_after(&comm->win_list, &win->list);
@@ -146,8 +139,7 @@ int kupl_shm_sls_win_add(kupl_shm_comm_h comm, kupl_shm_win_h win, int flag)
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int kupl_shm_sls_win_del(kupl_shm_win_h win, int flag)
+static kupl_always_inline int kupl_shm_sls_win_del(kupl_shm_win_h win, int flag)
 {
     if (flag) {
         kupl_list_del(&win->list);
@@ -156,7 +148,7 @@ int kupl_shm_sls_win_del(kupl_shm_win_h win, int flag)
 }
 
 int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag,
-    size_t *offset_list)
+                           size_t *offset_list)
 {
     int ret;
     long err;
@@ -268,12 +260,12 @@ int kupl_shm_sls_win_free(kupl_shm_win_h win, int flag)
 }
 
 int kupl_shm_sls_win_mpool_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag,
-    size_t *offset_list)
+                                 size_t *offset_list)
 {
     int ret;
     if (size == 0) {
         kupl_warn("kupl mpool does not support 0 size allocation, fallback to malloc.")
-        ret = kupl_shm_sls_win_alloc(0, comm, baseptr, win, flag, offset_list);
+            ret = kupl_shm_sls_win_alloc(0, comm, baseptr, win, flag, offset_list);
         return ret;
     }
     kupl_shm_win_h win_temp;
@@ -376,21 +368,17 @@ int kupl_shm_sls_win_query(kupl_shm_win_h win, int remote_rank, void **baseptr)
     return KUPL_OK;
 }
 
-static const kupl_shm_ops_t g_kupl_shm_sls_ops = {
-    .init               = kupl_shm_sls_init,
-    .finalize           = kupl_shm_sls_finalize,
-    .shm_win_alloc      = kupl_shm_sls_win_alloc,
-    .shm_win_free       = kupl_shm_sls_win_free,
-    .shm_win_query      = kupl_shm_sls_win_query
-};
+static const kupl_shm_ops_t g_kupl_shm_sls_ops = {.init = kupl_shm_sls_init,
+                                                  .finalize = kupl_shm_sls_finalize,
+                                                  .shm_win_alloc = kupl_shm_sls_win_alloc,
+                                                  .shm_win_free = kupl_shm_sls_win_free,
+                                                  .shm_win_query = kupl_shm_sls_win_query};
 
-static const kupl_shm_ops_t g_kupl_shm_sls_mpool_ops = {
-    .init               = kupl_shm_sls_init,
-    .finalize           = kupl_shm_sls_finalize,
-    .shm_win_alloc      = kupl_shm_sls_win_mpool_alloc,
-    .shm_win_free       = kupl_shm_sls_win_mpool_free,
-    .shm_win_query      = kupl_shm_sls_win_query
-};
+static const kupl_shm_ops_t g_kupl_shm_sls_mpool_ops = {.init = kupl_shm_sls_init,
+                                                        .finalize = kupl_shm_sls_finalize,
+                                                        .shm_win_alloc = kupl_shm_sls_win_mpool_alloc,
+                                                        .shm_win_free = kupl_shm_sls_win_mpool_free,
+                                                        .shm_win_query = kupl_shm_sls_win_query};
 
 void kupl_shm_sls_reg_ops()
 {

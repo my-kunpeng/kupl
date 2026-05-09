@@ -27,7 +27,7 @@ extern "C" {
 extern int g_kupl_memory_pool_size;
 extern bool g_mpool_inited;
 
-int kupl_memory_is_pinned(void* addr, size_t count);
+int kupl_memory_is_pinned(void *addr, size_t count);
 int kupl_mpool_init(void);
 void kupl_mpool_fini(void);
 int kupl_memory_expand(void);
@@ -38,33 +38,33 @@ void kupl_memory_expand_fini(void);
     Code using memory_alloc api should be checked that
     geid matches its own global executor id.
 */
-void* kupl_memory_alloc_inner(size_t size, int geid);
-void* kupl_memory_calloc_inner(size_t size, int geid);
+void *kupl_memory_alloc_inner(size_t size, int geid);
+void *kupl_memory_calloc_inner(size_t size, int geid);
 void kupl_memory_free_inner(void *ptr, int geid);
-void* kupl_memory_hbw_alloc_inner(size_t size, int geid);
+void *kupl_memory_hbw_alloc_inner(size_t size, int geid);
 void kupl_memory_hbw_free_inner(void *ptr, int geid);
 
 #define KUPL_CHECK_MEM 0
 #if KUPL_CHECK_MEM
-#define kupl_memory_alloc(_s, _geid)           \
-({                                              \
-    PROFILE_DATA_STATS(0xa110c, __FUNCTION__);  \
-    kupl_memory_alloc_inner(_s, _geid);        \
-})
-#define kupl_memory_calloc(_s, _geid)          \
-({                                              \
-    PROFILE_DATA_STATS(0xca110c, __FUNCTION__); \
-    kupl_memory_calloc_inner(_s, _geid);       \
-})
-#define kupl_memory_free(_p, _geid)            \
-({                                              \
-    PROFILE_DATA_STATS(0xf1ee, __FUNCTION__);   \
-    kupl_memory_free_inner(_p, _geid);         \
-})
+#define kupl_memory_alloc(_s, _geid)               \
+    ({                                             \
+        PROFILE_DATA_STATS(0xa110c, __FUNCTION__); \
+        kupl_memory_alloc_inner(_s, _geid);        \
+    })
+#define kupl_memory_calloc(_s, _geid)               \
+    ({                                              \
+        PROFILE_DATA_STATS(0xca110c, __FUNCTION__); \
+        kupl_memory_calloc_inner(_s, _geid);        \
+    })
+#define kupl_memory_free(_p, _geid)               \
+    ({                                            \
+        PROFILE_DATA_STATS(0xf1ee, __FUNCTION__); \
+        kupl_memory_free_inner(_p, _geid);        \
+    })
 #else
-#define kupl_memory_alloc(_s, _geid)     kupl_memory_alloc_inner(_s, _geid)
-#define kupl_memory_calloc(_s, _geid)    kupl_memory_calloc_inner(_s, _geid)
-#define kupl_memory_free(_p, _geid)      kupl_memory_free_inner(_p, _geid)
+#define kupl_memory_alloc(_s, _geid) kupl_memory_alloc_inner(_s, _geid)
+#define kupl_memory_calloc(_s, _geid) kupl_memory_calloc_inner(_s, _geid)
+#define kupl_memory_free(_p, _geid) kupl_memory_free_inner(_p, _geid)
 #endif
 
 /**
@@ -80,7 +80,7 @@ bool kupl_memory_is_inited(void);
  *
  * @return the prt of the memory
  */
-void* kupl_malloc_inner(size_t size);
+void *kupl_malloc_inner(size_t size);
 
 /**
  * @brief Allocates memory for an array of objects, zero-initializes all bytes in allocated storage,
@@ -91,7 +91,7 @@ void* kupl_malloc_inner(size_t size);
  *
  * @return the prt of the memory
  */
-void* kupl_calloc(size_t num, size_t size);
+void *kupl_calloc(size_t num, size_t size);
 
 /**
  * @brief Allocates size bytes of memory with alignment of size alignment and
@@ -102,7 +102,7 @@ void* kupl_calloc(size_t num, size_t size);
  *
  * @return the prt of the memory
  */
-void* kupl_aligned_alloc(size_t alignment, size_t size);
+void *kupl_aligned_alloc(size_t alignment, size_t size);
 
 /**
  * @brief Deallocates memory
@@ -116,13 +116,13 @@ void kupl_free_inner(void *ptr);
  *
  * @param [in] ptr          the memory ptr
  */
-#define kupl_safe_free(_p)     \
-do {                            \
-    if ((_p) != nullptr) {      \
-        kupl_free_inner(_p);         \
-        (_p) = nullptr;         \
-    }                           \
-} while (0)
+#define kupl_safe_free(_p)       \
+    do {                         \
+        if ((_p) != nullptr) {   \
+            kupl_free_inner(_p); \
+            (_p) = nullptr;      \
+        }                        \
+    } while (0)
 
 /**
  * @brief Allocates huge page memory
@@ -131,7 +131,7 @@ do {                            \
  * @param [out] align_size      the memory aligned size
  * @param [in] use_hbw          whether it is hbw alloacation
  */
-void *kupl_malloc_hugepages_inner(size_t size, size_t* align_size, int use_hbw);
+void *kupl_malloc_hugepages_inner(size_t size, size_t *align_size, int use_hbw);
 
 /**
  * @brief Deallocates huge page memory

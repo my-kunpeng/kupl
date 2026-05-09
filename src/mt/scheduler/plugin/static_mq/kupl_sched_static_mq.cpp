@@ -17,16 +17,14 @@
 #include "tools/struct/kupl_vector.h"
 
 using queue_t = struct {
-    kupl_vector_t    *q;
-    kupl_lock_t      *add_lock;
-    kupl_lock_t      *get_lock;
+    kupl_vector_t *q;
+    kupl_lock_t *add_lock;
+    kupl_lock_t *get_lock;
 };
 
-static kupl_always_inline
-void queue_destroy(queue_t *queue);
+static kupl_always_inline void queue_destroy(queue_t *queue);
 
-static kupl_always_inline
-queue_t *queue_create(int size)
+static kupl_always_inline queue_t *queue_create(int size)
 {
     queue_t *queue = (queue_t *)kupl_calloc(1, sizeof(queue_t));
     if (queue == nullptr) {
@@ -44,8 +42,7 @@ err:
     return nullptr;
 }
 
-static kupl_always_inline
-void queue_destroy(queue_t *queue)
+static kupl_always_inline void queue_destroy(queue_t *queue)
 {
     if (queue == nullptr) {
         return;
@@ -62,8 +59,7 @@ void queue_destroy(queue_t *queue)
     kupl_safe_free(queue);
 }
 
-static kupl_always_inline
-int queue_add_tb(queue_t *queue, kupl_taskbase_t *tb)
+static kupl_always_inline int queue_add_tb(queue_t *queue, kupl_taskbase_t *tb)
 {
     int err = KUPL_ERROR;
     if (kupl_unlikely(queue == nullptr)) {
@@ -77,8 +73,7 @@ int queue_add_tb(queue_t *queue, kupl_taskbase_t *tb)
     return err;
 }
 
-static kupl_always_inline
-kupl_taskbase_t *queue_get_tb(queue_t *queue)
+static kupl_always_inline kupl_taskbase_t *queue_get_tb(queue_t *queue)
 {
     kupl_taskbase_t *tb = nullptr;
     if (kupl_unlikely(queue == nullptr)) {
@@ -96,10 +91,10 @@ kupl_taskbase_t *queue_get_tb(queue_t *queue)
 }
 
 typedef struct kupl_sched_static_mq {
-    int                 num_executors;      // num executors
-    int                 queue_size;         // queue size
-    priority_queue_t    *priority_queues;
-    queue_t             **queues;           // local_queues own by executors
+    int num_executors; // num executors
+    int queue_size;    // queue size
+    priority_queue_t *priority_queues;
+    queue_t **queues; // local_queues own by executors
 } kupl_sched_static_mq_t;
 
 static int enable_priority;
@@ -114,12 +109,10 @@ static int kupl_sched_static_mq_init(kupl_sched_plugin_property_t *property)
     return KUPL_OK;
 }
 
-static void kupl_sched_static_mq_fini()
-{
-}
+static void kupl_sched_static_mq_fini() {}
 
 static void kupl_sched_static_mq_cleanup(void *_sched);
-static void* kupl_sched_static_mq_create()
+static void *kupl_sched_static_mq_create()
 {
     auto host_info = kupl_get_host_info();
     int num_executors = host_info->avail_pu_cnt;
@@ -215,7 +208,7 @@ static const kupl_sched_plugin_api_t KUPL_SCHED_PLUGIN_GLOBAL_VAR(static_mq) = {
     .get_tb = kupl_sched_static_mq_get_tb,
 };
 
-const kupl_sched_plugin_api_t* kupl_sched_static_mq_get_instance()
+const kupl_sched_plugin_api_t *kupl_sched_static_mq_get_instance()
 {
     return &KUPL_SCHED_PLUGIN_GLOBAL_VAR(static_mq);
 }

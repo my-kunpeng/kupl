@@ -20,12 +20,12 @@
 
 #define SLS_ALIGN_SIZE 2097152
 #define PAGE_SIZE 2097152
-#define SLS_DEVICE  "/dev/zdax"
+#define SLS_DEVICE "/dev/zdax"
 #define PAGE_MASK (~(PAGE_SIZE - 1))
 #define PAGE_ALIGN(addr) (((addr) + (size_t)PAGE_SIZE - 1) & (size_t)PAGE_MASK)
 
-int align_and_round_page(unsigned long addr, size_t size, unsigned long *aligned_addr,
-                         size_t *aligned_size, unsigned long *page_offset)
+int align_and_round_page(unsigned long addr, size_t size, unsigned long *aligned_addr, size_t *aligned_size,
+                         unsigned long *page_offset)
 {
     if (!aligned_addr || !aligned_size) {
         return -1;
@@ -52,7 +52,7 @@ bool kupl_shm_sls_init_module()
     return true;
 }
 
-int kupl_shm_sls_init_fs(kupl_shm_sls_slfs_t& res)
+int kupl_shm_sls_init_fs(kupl_shm_sls_slfs_t &res)
 {
     int fd = open(SLS_DEVICE, O_RDWR);
     res.ret = -1;
@@ -66,13 +66,12 @@ int kupl_shm_sls_init_fs(kupl_shm_sls_slfs_t& res)
     return KUPL_OK;
 }
 
-int kupl_shm_sls_zcopy(int fd, void* src_addr, void* dst_addr,
-                       int src_pid, int dst_pid, unsigned long size,
-                       kupl_shm_sls_slfs_t& res)
+int kupl_shm_sls_zcopy(int fd, void *src_addr, void *dst_addr, int src_pid, int dst_pid, unsigned long size,
+                       kupl_shm_sls_slfs_t &res)
 {
     res.ret = -1;
-    if ((uint64_t)src_addr % SLS_ALIGN_SIZE != 0 || (uint64_t)dst_addr % SLS_ALIGN_SIZE != 0
-            || size % SLS_ALIGN_SIZE != 0) {
+    if ((uint64_t)src_addr % SLS_ALIGN_SIZE != 0 || (uint64_t)dst_addr % SLS_ALIGN_SIZE != 0 ||
+        size % SLS_ALIGN_SIZE != 0) {
         return KUPL_ERROR;
     }
 
@@ -85,10 +84,8 @@ int kupl_shm_sls_zcopy(int fd, void* src_addr, void* dst_addr,
     return KUPL_OK;
 }
 
-int kupl_shm_sls_zcopy_all(int fd, void* src_addr, void** dst_addr,
-                           int src_pid, int dst_pid,
-                           unsigned long size, void** base_addr,
-                           kupl_shm_sls_slfs_t &res)
+int kupl_shm_sls_zcopy_all(int fd, void *src_addr, void **dst_addr, int src_pid, int dst_pid, unsigned long size,
+                           void **base_addr, kupl_shm_sls_slfs_t &res)
 {
     unsigned long aligned_addr = 0;
     size_t aligned_size = 0;
@@ -97,8 +94,8 @@ int kupl_shm_sls_zcopy_all(int fd, void* src_addr, void** dst_addr,
     int ret = KUPL_ERROR;
 
     /* 执行地址对齐和大小调整 */
-    if (align_and_round_page((unsigned long)src_addr, size,
-                             (unsigned long *)&aligned_addr, &aligned_size, &page_offset) != 0) {
+    if (align_and_round_page((unsigned long)src_addr, size, (unsigned long *)&aligned_addr, &aligned_size,
+                             &page_offset) != 0) {
         return ret;
     }
 
@@ -107,7 +104,7 @@ int kupl_shm_sls_zcopy_all(int fd, void* src_addr, void** dst_addr,
         return ret;
     }
 
-    ret = kupl_shm_sls_zcopy(fd, (void*)aligned_addr, *dst_addr, src_pid, dst_pid, aligned_size, res);
+    ret = kupl_shm_sls_zcopy(fd, (void *)aligned_addr, *dst_addr, src_pid, dst_pid, aligned_size, res);
     if (ret == KUPL_ERROR) {
         free(*dst_addr);
         *dst_addr = nullptr;
@@ -115,12 +112,12 @@ int kupl_shm_sls_zcopy_all(int fd, void* src_addr, void** dst_addr,
     }
 
     *base_addr = *dst_addr;
-    *dst_addr = (void*)((char*)*dst_addr + page_offset);
+    *dst_addr = (void *)((char *)*dst_addr + page_offset);
 
     return ret;
 }
 
-void* kupl_shm_attach(kupl_shm_addr_t addr, size_t size)
+void *kupl_shm_attach(kupl_shm_addr_t addr, size_t size)
 {
     void *src_addr = addr.src_addr;
     int src_pid = addr.src_pid;
@@ -145,8 +142,8 @@ void* kupl_shm_attach(kupl_shm_addr_t addr, size_t size)
     }
 
     /* 执行地址对齐和大小调整 */
-    if (align_and_round_page((unsigned long)src_addr, size,
-                             (unsigned long *)&aligned_addr, &aligned_size, &page_offset) != 0) {
+    if (align_and_round_page((unsigned long)src_addr, size, (unsigned long *)&aligned_addr, &aligned_size,
+                             &page_offset) != 0) {
         return nullptr;
     }
 
@@ -161,24 +158,24 @@ void* kupl_shm_attach(kupl_shm_addr_t addr, size_t size)
         return nullptr;
     }
 
-    ret = kupl_shm_sls_zcopy(res.init.fd, (void*)aligned_addr, dst_addr, src_pid, dst_pid, aligned_size, res);
+    ret = kupl_shm_sls_zcopy(res.init.fd, (void *)aligned_addr, dst_addr, src_pid, dst_pid, aligned_size, res);
     if (ret == KUPL_ERROR) {
         free(dst_addr);
         return nullptr;
     }
-    dst_addr = (void*)((char*)dst_addr + page_offset); // add page_offset
+    dst_addr = (void *)((char *)dst_addr + page_offset); // add page_offset
 
     return dst_addr;
 }
 
-void kupl_shm_detach(void* ptr)
+void kupl_shm_detach(void *ptr)
 {
     if (kupl_unlikely(ptr == nullptr)) {
         kupl_error("kupl_detach failed: Invalid ptr");
         return;
     }
     unsigned long aligned_offset = (unsigned long)ptr & ~PAGE_MASK;
-    void *aligned_addr = (void*)((char*)ptr - aligned_offset);
+    void *aligned_addr = (void *)((char *)ptr - aligned_offset);
     free(aligned_addr);
     ptr = nullptr;
 }

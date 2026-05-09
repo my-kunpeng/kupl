@@ -21,19 +21,19 @@ extern "C" {
 
 #ifdef ENABLE_KUPL_ASSERT
 
-#define kupl_assert(_cond)                          \
-    do {                                            \
-        if (kupl_unlikely(!(_cond))) {              \
-            kupl_fatal("assert failed! " #_cond);   \
-            exit(0);                                \
-        }                                           \
+#define kupl_assert(_cond)                        \
+    do {                                          \
+        if (kupl_unlikely(!(_cond))) {            \
+            kupl_fatal("assert failed! " #_cond); \
+            exit(0);                              \
+        }                                         \
     } while (0)
 
-#define kupl_assertv(_cond, args...)                \
-    do {                                            \
-        if (kupl_unlikely(_cond)) {                 \
-            kupl_fatal(args);                       \
-        }                                           \
+#define kupl_assertv(_cond, args...) \
+    do {                             \
+        if (kupl_unlikely(_cond)) {  \
+            kupl_fatal(args);        \
+        }                            \
     } while (0)
 
 #else
@@ -42,7 +42,6 @@ extern "C" {
 #define kupl_assertv(_cond, args...)
 
 #endif
-
 
 #ifdef __cplusplus
 }

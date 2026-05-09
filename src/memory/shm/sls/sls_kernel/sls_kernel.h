@@ -18,8 +18,7 @@
 extern "C" {
 #endif
 
-long attach(int fd, unsigned long src_addr, unsigned long dst_addr,
-            int src_pid, int dst_pid, unsigned long size);
+long attach(int fd, unsigned long src_addr, unsigned long dst_addr, int src_pid, int dst_pid, unsigned long size);
 
 long dump(int fd, unsigned long addr);
 

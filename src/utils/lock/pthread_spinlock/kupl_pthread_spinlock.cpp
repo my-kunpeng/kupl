@@ -39,7 +39,7 @@ static int kupl_pthread_spinlock_trylock(kupl_lock_t *lock)
     return pthread_spin_trylock(raw) == 0;
 }
 
-kupl_lock_t* kupl_pthread_spinlock_init()
+kupl_lock_t *kupl_pthread_spinlock_init()
 {
     auto lock = (kupl_lock_t *)kupl_calloc(1, sizeof(kupl_lock_t) + sizeof(pthread_spinlock_t));
     if (kupl_unlikely(lock == nullptr)) {

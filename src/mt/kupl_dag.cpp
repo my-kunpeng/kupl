@@ -12,8 +12,7 @@
 #include "kupl_dag.h"
 #include "mt/kupl_task.h"
 
-static kupl_always_inline
-kupl_gnode_t* kupl_gnode_ref(kupl_gnode_t *node)
+static kupl_always_inline kupl_gnode_t *kupl_gnode_ref(kupl_gnode_t *node)
 {
     if (kupl_likely(node != nullptr)) {
         kupl_task_ref(&(kupl_gnode_get_task(node)->tb));
@@ -21,8 +20,7 @@ kupl_gnode_t* kupl_gnode_ref(kupl_gnode_t *node)
     return node;
 }
 
-static kupl_always_inline
-void kupl_gnode_deref(kupl_gnode_t *node, int geid)
+static kupl_always_inline void kupl_gnode_deref(kupl_gnode_t *node, int geid)
 {
     if (kupl_likely(node != nullptr)) {
         kupl_task_deref(&(kupl_gnode_get_task(node)->tb), geid);
@@ -55,8 +53,7 @@ uint32_t kupl_gnode_precede(kupl_gnode_t *precede, kupl_gnode_t *succeed, int ge
     return 1;
 }
 
-static kupl_always_inline
-uint32_t node_process_dep_out(kupl_addr_entry_t *entry, kupl_gnode_t *node, int geid)
+static kupl_always_inline uint32_t node_process_dep_out(kupl_addr_entry_t *entry, kupl_gnode_t *node, int geid)
 {
     uint32_t n_predecessors = 0;
     if (entry->in) {
@@ -78,16 +75,14 @@ uint32_t node_process_dep_out(kupl_addr_entry_t *entry, kupl_gnode_t *node, int 
     return n_predecessors;
 }
 
-static kupl_always_inline
-uint32_t node_process_dep_in(kupl_addr_entry_t *entry, kupl_gnode_t *node, int geid)
+static kupl_always_inline uint32_t node_process_dep_in(kupl_addr_entry_t *entry, kupl_gnode_t *node, int geid)
 {
     kupl_gnode_ref(node);
     kupl_slist_insert_front(&entry->in, node, geid);
     return kupl_gnode_precede(entry->out, node, geid);
 }
 
-static kupl_always_inline
-int kupl_node_process_dep(kupl_gnode_t *node, kupl_dag_t* dag, kupl_task_dep_t *dep, int geid)
+static kupl_always_inline int kupl_node_process_dep(kupl_gnode_t *node, kupl_dag_t *dag, kupl_task_dep_t *dep, int geid)
 {
     auto hash = dag->hash;
     kupl_addr_entry_t *entry = nullptr;
@@ -146,8 +141,7 @@ process_dep:
 /**
  * @brief release all successors of gnode, return the ready tasks.
  */
-static kupl_always_inline
-uint32_t gnode_release_ready(kupl_gnode_t *gnode, kupl_task_t **ready_tasks)
+static kupl_always_inline uint32_t gnode_release_ready(kupl_gnode_t *gnode, kupl_task_t **ready_tasks)
 {
     if (!kupl_gnode_has_deps(gnode)) {
         return 0;
@@ -156,7 +150,7 @@ uint32_t gnode_release_ready(kupl_gnode_t *gnode, kupl_task_t **ready_tasks)
     kupl_gnode_t *curr_gnode = nullptr;
     kupl_slist_t *curr_list = gnode->successors.head;
     while (curr_list != nullptr) {
-        curr_gnode = (kupl_gnode_t*)curr_list->data;
+        curr_gnode = (kupl_gnode_t *)curr_list->data;
         uint32_t ready = (KUPL_ATOMIC_SUB_RLX(&curr_gnode->n_predecessors, 1u) == 1);
         if (ready) {
             *ready_tasks = kupl_gnode_get_task(curr_gnode);
@@ -180,7 +174,7 @@ uint32_t kupl_gnode_release_ready_safe(kupl_gnode_t *gnode, kupl_task_t **ready_
     return gnode_release_ready(gnode, ready_tasks);
 }
 
-kupl_addr_entry_t* kupl_addr_entry_create(int geid)
+kupl_addr_entry_t *kupl_addr_entry_create(int geid)
 {
     auto entry = (kupl_addr_entry_t *)kupl_memory_alloc(sizeof(kupl_addr_entry_t), geid);
     if (kupl_unlikely(entry == nullptr)) {
@@ -207,7 +201,7 @@ void kupl_addr_entry_destroy(kupl_addr_entry_t *entry, int geid)
 
 /*=====  dag  ======*/
 
-kupl_dag_t* kupl_dag_create(int geid)
+kupl_dag_t *kupl_dag_create(int geid)
 {
     auto dag = (kupl_dag_t *)kupl_memory_alloc(sizeof(kupl_dag_t), geid);
     if (kupl_unlikely(dag == nullptr)) {
@@ -226,7 +220,7 @@ kupl_dag_t* kupl_dag_create(int geid)
     return dag;
 }
 
-void kupl_dag_destroy(kupl_dag_t* dag, int geid)
+void kupl_dag_destroy(kupl_dag_t *dag, int geid)
 {
     if (kupl_unlikely(dag == nullptr)) {
         kupl_error("parmas invalid.");
@@ -241,16 +235,17 @@ void kupl_dag_destroy(kupl_dag_t* dag, int geid)
     kupl_memory_free(dag, geid);
 }
 
-static kupl_always_inline
-void dep_list_rm_dup(kupl_task_dep_t *task_dep_list, kupl_task_dep_t *dep_list, uint32_t &dep_cnt)
+static kupl_always_inline void dep_list_rm_dup(kupl_task_dep_t *task_dep_list, kupl_task_dep_t *dep_list,
+                                               uint32_t &dep_cnt)
 {
     /* process dep */
     uint64_t hash = 0;
-    kupl_task_dep_t* task_dep;
+    kupl_task_dep_t *task_dep;
     size_t count = 0;
     for (size_t i = 0; i < dep_cnt; i++) {
         task_dep = task_dep_list + i;
-        if (kupl_unlikely((task_dep->type == KUPL_TASK_DEP_TYPE_ALL) || (task_dep->base_addr == KUPL_TASK_DEP_ALL_ADDR))) {
+        if (kupl_unlikely((task_dep->type == KUPL_TASK_DEP_TYPE_ALL) ||
+                          (task_dep->base_addr == KUPL_TASK_DEP_ALL_ADDR))) {
             dep_list[0].base_addr = KUPL_TASK_DEP_ALL_ADDR;
             dep_list[0].type = KUPL_TASK_DEP_TYPE_ALL;
             dep_cnt = 1;
@@ -277,7 +272,8 @@ void dep_list_rm_dup(kupl_task_dep_t *task_dep_list, kupl_task_dep_t *dep_list, 
     }
 }
 
-int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_dep_list, uint32_t task_dep_cnt, int geid)
+int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_dep_list, uint32_t task_dep_cnt,
+                      int geid)
 {
     bool use_alloc = false;
     kupl_task_dep_t local_dep_list[KUPL_MAX_LOCAL_DEP_COUNT];
@@ -297,7 +293,7 @@ int kupl_dag_add_task(kupl_dag_t *dag, kupl_task_t *task, kupl_task_dep_t *task_
     /* process deps */
     uint32_t n_predecessors = 0;
     for (size_t i = 0; i < dep_cnt; i++) {
-        int ret = kupl_node_process_dep(node, dag, (dep_list+i), geid);
+        int ret = kupl_node_process_dep(node, dag, (dep_list + i), geid);
         if (kupl_unlikely(ret == KUPL_ERROR)) {
             task_is_ready = KUPL_ERROR;
             goto out;

@@ -63,14 +63,15 @@ kupl_sgraph_node_h kupl_sgraph_add_node(kupl_sgraph_h sgraph, kupl_sgraph_node_d
         tb_desc.executor_id = (int)kupl_egroup_master_eid(desc->egroup);
     }
     kupl_task_param_t task_param = {
-        .super = {
-            .type       = KUPL_TB_TYPE_TASK,
-            .user_desc  = &tb_desc,
-            .sgraph     = sgraph,
-            .count      = &sgraph->task_count,
-        },
-        .kind       = KUPL_TASK_KIND_COMM_STATIC,
-        .inplace    = nullptr,
+        .super =
+            {
+                .type = KUPL_TB_TYPE_TASK,
+                .user_desc = &tb_desc,
+                .sgraph = sgraph,
+                .count = &sgraph->task_count,
+            },
+        .kind = KUPL_TASK_KIND_COMM_STATIC,
+        .inplace = nullptr,
         .udata_size = 0,
     };
 
@@ -117,7 +118,7 @@ void kupl_sgraph_destroy(kupl_sgraph_h sgraph)
     kupl_gnode_t *node = nullptr;
     kupl_task_t *task = nullptr;
     while (sgraph->nodes != nullptr) {
-        node = (kupl_gnode_t*)sgraph->nodes->data;
+        node = (kupl_gnode_t *)sgraph->nodes->data;
         task = kupl_gnode_get_task(node);
         kupl_task_deref(&task->tb, geid);
         kupl_slist_destroy(&sgraph->nodes, geid);
@@ -142,61 +143,59 @@ void kupl_sgraph_task_body(void *args)
 
 namespace kupl {
 
-    kupl_sgraph_node_h sgraph_add_node(kupl_sgraph_h sgraph, kupl_sgraph_node_desc_t *desc,
-                                       const std::function<void(void)> &func)
-    {
-        if (kupl_unlikely(sgraph == nullptr || desc == nullptr || func == nullptr)) {
-            kupl_error("static graph add norm node params invalid.");
-            return nullptr;
-        }
-        int geid = kupl_get_executor_num();
+kupl_sgraph_node_h sgraph_add_node(kupl_sgraph_h sgraph, kupl_sgraph_node_desc_t *desc,
+                                   const std::function<void(void)> &func)
+{
+    if (kupl_unlikely(sgraph == nullptr || desc == nullptr || func == nullptr)) {
+        kupl_error("static graph add norm node params invalid.");
+        return nullptr;
+    }
+    int geid = kupl_get_executor_num();
 
-        kupl_task_h task = (kupl_task_h)kupl_memory_alloc(sizeof(kupl_task_t) + sizeof(lambda_func_data), geid);
-        if (kupl_unlikely(task == nullptr)) {
-            kupl_warn("task init failed");
-            return nullptr;
-        }
-        task->tb.ref = 1;
+    kupl_task_h task = (kupl_task_h)kupl_memory_alloc(sizeof(kupl_task_t) + sizeof(lambda_func_data), geid);
+    if (kupl_unlikely(task == nullptr)) {
+        kupl_warn("task init failed");
+        return nullptr;
+    }
+    task->tb.ref = 1;
 
-        lambda_func_data *data = reinterpret_cast<lambda_func_data *>(task->udata);
-        memset((void*)data, 0, sizeof(lambda_func_data));
-        data->func = func;
-        desc->func = lambda_func;
-        desc->args = data;
+    lambda_func_data *data = reinterpret_cast<lambda_func_data *>(task->udata);
+    memset((void *)data, 0, sizeof(lambda_func_data));
+    data->func = func;
+    desc->func = lambda_func;
+    desc->args = data;
 
-        kupl_tb_desc_t tb_desc = {
-            .field_mask = desc->field_mask,
-            .func = lambda_func,
-            .args = data,
-            .name = desc->name,
-            .priority = desc->priority,
-            .flag = desc->flag,
-        };
-        if ((desc->field_mask & KUPL_SGRAPH_NODE_DESC_FIELD_EGROUP) && (desc->egroup != nullptr)) {
-            tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EXECUTOR_ID;
-            tb_desc.executor_id = (int)kupl_egroup_master_eid(desc->egroup);
-        }
-
-        kupl_task_param_t task_param = {
-            .super = {
-                .type       = KUPL_TB_TYPE_TASK,
-                .user_desc  = &tb_desc,
-                .sgraph     = sgraph,
-                .count      = &sgraph->task_count,
-            }
-        };
-        kupl_tb_init(&task->tb, &task_param.super, geid);
-        task->kind = KUPL_TASK_KIND_COMM_STATIC;
-        task->tb.ops = &task_ops;
-        if (KUPL_ERROR == kupl_gnode_init(task->gnode)) {
-            kupl_task_cleanup(task);
-            return nullptr;
-        }
-        task->tb.id = sgraph->task_id++;
-        kupl_slist_insert_front(&sgraph->nodes, &task->gnode, geid);
-        sgraph->src_nodes->emplace(task->tb.id, task);
-
-        return (kupl_sgraph_node_h)&task->gnode;
+    kupl_tb_desc_t tb_desc = {
+        .field_mask = desc->field_mask,
+        .func = lambda_func,
+        .args = data,
+        .name = desc->name,
+        .priority = desc->priority,
+        .flag = desc->flag,
+    };
+    if ((desc->field_mask & KUPL_SGRAPH_NODE_DESC_FIELD_EGROUP) && (desc->egroup != nullptr)) {
+        tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EXECUTOR_ID;
+        tb_desc.executor_id = (int)kupl_egroup_master_eid(desc->egroup);
     }
 
+    kupl_task_param_t task_param = {.super = {
+                                        .type = KUPL_TB_TYPE_TASK,
+                                        .user_desc = &tb_desc,
+                                        .sgraph = sgraph,
+                                        .count = &sgraph->task_count,
+                                    }};
+    kupl_tb_init(&task->tb, &task_param.super, geid);
+    task->kind = KUPL_TASK_KIND_COMM_STATIC;
+    task->tb.ops = &task_ops;
+    if (KUPL_ERROR == kupl_gnode_init(task->gnode)) {
+        kupl_task_cleanup(task);
+        return nullptr;
+    }
+    task->tb.id = sgraph->task_id++;
+    kupl_slist_insert_front(&sgraph->nodes, &task->gnode, geid);
+    sgraph->src_nodes->emplace(task->tb.id, task);
+
+    return (kupl_sgraph_node_h)&task->gnode;
 }
+
+} // namespace kupl

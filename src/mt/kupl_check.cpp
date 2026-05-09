@@ -32,9 +32,7 @@ int kupl_check_range(kupl_nd_range_t *range, kupl_loop_policy_type_t policy)
         int64_t upper = range->nd_range[i].upper;
         int64_t step = range->nd_range[i].step;
         int64_t chunksize = 1;
-        if (kupl_unlikely((upper <= lower && step > 0)
-                          || (upper >= lower && step < 0)
-                          || (step == 0))) {
+        if (kupl_unlikely((upper <= lower && step > 0) || (upper >= lower && step < 0) || (step == 0))) {
             return kupl_log_error_return(WARN, "the range input is not support!");
         }
         switch (policy) {
@@ -51,13 +49,13 @@ int kupl_check_range(kupl_nd_range_t *range, kupl_loop_policy_type_t policy)
                     range->nd_range[i].blocksize = 1;
                 }
                 int64_t blocksize = range->nd_range[i].blocksize;
-                if (kupl_unlikely((step > 0 && KUPL_MAX_CHUNK / blocksize < step))
-                                  || (step < 0 && KUPL_MAX_CHUNK / blocksize < -step)) {
+                if (kupl_unlikely((step > 0 && KUPL_MAX_CHUNK / blocksize < step)) ||
+                    (step < 0 && KUPL_MAX_CHUNK / blocksize < -step)) {
                     return kupl_log_error_return(ERROR, "the range input is not support! blocksize: %ld", blocksize);
                 }
                 chunksize = blocksize * step;
-                if (kupl_unlikely((chunksize > 0 && INT64_MAX - chunksize < upper)
-                                  || (chunksize < 0 && INT64_MIN - chunksize > upper))) {
+                if (kupl_unlikely((chunksize > 0 && INT64_MAX - chunksize < upper) ||
+                                  (chunksize < 0 && INT64_MIN - chunksize > upper))) {
                     return kupl_log_error_return(ERROR, "the range input is not support! blocksize: %ld", blocksize);
                 }
         }

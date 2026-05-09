@@ -20,41 +20,38 @@ extern "C" {
 #endif
 
 typedef struct {
-    int        fd;
+    int fd;
 } kupl_shm_sls_init_data_t;
 
 typedef struct {
-    void      *addr;
+    void *addr;
 } kupl_shm_sls_mmap_data_t;
 
 typedef struct {
-    uint16_t   pgoff;
-    uint64_t   rsize;
+    uint16_t pgoff;
+    uint64_t rsize;
 } kupl_shm_sls_write_data_t;
 
 typedef struct {
-    int        ret;
+    int ret;
     union {
-        kupl_shm_sls_init_data_t  init;
-        kupl_shm_sls_mmap_data_t  mmap;
+        kupl_shm_sls_init_data_t init;
+        kupl_shm_sls_mmap_data_t mmap;
         kupl_shm_sls_write_data_t write;
     };
 } kupl_shm_sls_slfs_t;
 
 bool kupl_shm_sls_init_module();
 
-int kupl_shm_sls_init_fs(kupl_shm_sls_slfs_t& re);
+int kupl_shm_sls_init_fs(kupl_shm_sls_slfs_t &re);
 
-int kupl_shm_sls_zcopy(int fd, void* src_addr, void* dst_addr,
-                       int src_pid, int dst_pid, unsigned long size,
-                       kupl_shm_sls_slfs_t& res);
+int kupl_shm_sls_zcopy(int fd, void *src_addr, void *dst_addr, int src_pid, int dst_pid, unsigned long size,
+                       kupl_shm_sls_slfs_t &res);
 
-int kupl_shm_sls_zcopy_all(int fd, void* src_addr, void** dst_addr,
-                           int src_pid, int dst_pid,
-                           unsigned long size, void** base_addr,
-                           kupl_shm_sls_slfs_t& res);
+int kupl_shm_sls_zcopy_all(int fd, void *src_addr, void **dst_addr, int src_pid, int dst_pid, unsigned long size,
+                           void **base_addr, kupl_shm_sls_slfs_t &res);
 
-kupl_shm_sls_slfs_t kupl_shm_sls_slfs_dump(int fd, void* addrs);
+kupl_shm_sls_slfs_t kupl_shm_sls_slfs_dump(int fd, void *addrs);
 
 #ifdef __cplusplus
 }

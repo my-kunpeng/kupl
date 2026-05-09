@@ -29,8 +29,7 @@ typedef struct kupl_pool {
     void *data;
 } kupl_pool_t;
 
-static kupl_always_inline
-kupl_pool_t* kupl_pool_create(size_t capacity, size_t elem_size)
+static kupl_always_inline kupl_pool_t *kupl_pool_create(size_t capacity, size_t elem_size)
 {
     size_t actual_capacity = 1;
     while (actual_capacity < capacity) {
@@ -51,13 +50,12 @@ kupl_pool_t* kupl_pool_create(size_t capacity, size_t elem_size)
     pool->tail = 0;
     pool->capacity = actual_capacity;
     pool->elem_size = elem_size;
-    pool->data = pool + 1;  /* because we alloc vector meta and data together */
+    pool->data = pool + 1; /* because we alloc vector meta and data together */
 
     return pool;
 }
 
-static kupl_always_inline
-void kupl_pool_cleanup(kupl_pool_t *pool)
+static kupl_always_inline void kupl_pool_cleanup(kupl_pool_t *pool)
 {
     if (kupl_unlikely(pool == nullptr)) {
         return;
@@ -71,33 +69,33 @@ void kupl_pool_cleanup(kupl_pool_t *pool)
     kupl_free_inner(pool);
 }
 
-#define kupl_pool_size(_pool)                ((_pool)->tail - (_pool)->head)
-#define kupl_pool_empty(_pool)               ((_pool)->head == (_pool)->tail)
-#define kupl_pool_full(_pool)                (((_pool)->tail - (_pool)->head + 1) >= ((_pool)->capacity))
-#define kupl_pool_put(_pool, _type, _elem)             \
-do {                                                    \
-    auto _arr = (_type *)(_pool)->data;                 \
-    auto _push_idx = (_pool)->tail % (_pool)->capacity; \
-    _arr[_push_idx] = _elem;                            \
-    (_pool)->tail++;                                    \
-} while (0)
+#define kupl_pool_size(_pool) ((_pool)->tail - (_pool)->head)
+#define kupl_pool_empty(_pool) ((_pool)->head == (_pool)->tail)
+#define kupl_pool_full(_pool) (((_pool)->tail - (_pool)->head + 1) >= ((_pool)->capacity))
+#define kupl_pool_put(_pool, _type, _elem)                  \
+    do {                                                    \
+        auto _arr = (_type *)(_pool)->data;                 \
+        auto _push_idx = (_pool)->tail % (_pool)->capacity; \
+        _arr[_push_idx] = _elem;                            \
+        (_pool)->tail++;                                    \
+    } while (0)
 
-#define kupl_pool_get(_pool, _elem)                                \
-do {                                                                \
-    decltype(&(_elem)) _arr = (decltype(&(_elem)))(_pool)->data;    \
-    auto _idx = (_pool)->head++ % (_pool)->capacity;                \
-    _elem = _arr[_idx];                                             \
-} while (0)
+#define kupl_pool_get(_pool, _elem)                                  \
+    do {                                                             \
+        decltype(&(_elem)) _arr = (decltype(&(_elem)))(_pool)->data; \
+        auto _idx = (_pool)->head++ % (_pool)->capacity;             \
+        _elem = _arr[_idx];                                          \
+    } while (0)
 
-#define kupl_pool_cleanup_all(_pool, _type, _clean, _args...)  \
-do {                                                            \
-    _type _v;                                                   \
-    while (!kupl_pool_empty(_pool)) {                          \
-        kupl_pool_get(_pool, _v);                              \
-        _clean(_v, ##_args);                                    \
-    }                                                           \
-    kupl_pool_cleanup(_pool);                                  \
-} while (0)
+#define kupl_pool_cleanup_all(_pool, _type, _clean, _args...) \
+    do {                                                      \
+        _type _v;                                             \
+        while (!kupl_pool_empty(_pool)) {                     \
+            kupl_pool_get(_pool, _v);                         \
+            _clean(_v, ##_args);                              \
+        }                                                     \
+        kupl_pool_cleanup(_pool);                             \
+    } while (0)
 
 #ifdef __cplusplus
 }

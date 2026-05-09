@@ -97,8 +97,7 @@ void kupl_fence_rd_wait(kupl_fence_h fence, int local_id, int local_num)
         }
         leap *= DOUBLING_STEP;
     }
-    kupl_fence_set_flag(fence, local_id, local_num, 0, 0,
-                           (REUSE_STEP + this_flag_idx) % KUPL_SHM_FENCE_FLAG_WIN_SIZE);
+    kupl_fence_set_flag(fence, local_id, local_num, 0, 0, (REUSE_STEP + this_flag_idx) % KUPL_SHM_FENCE_FLAG_WIN_SIZE);
     kupl_fence_set_flag_idx(fence, local_id, (1 + this_flag_idx) % KUPL_SHM_FENCE_FLAG_WIN_SIZE);
 
     // post phase

@@ -41,32 +41,32 @@ static int kupl_sched_hybrid_init(kupl_sched_plugin_property_t *property)
     return KUPL_OK;
 }
 
-static void kupl_sched_hybrid_fini()
-{
-}
+static void kupl_sched_hybrid_fini() {}
 
 static void kupl_sched_hybrid_cleanup(void *sched);
 
-static kupl_always_inline
-void kupl_sched_hybrid_get_plugin(const char *plugin_name, kupl_sched_hybrid_t *sched_hybrid, int level)
+static kupl_always_inline void kupl_sched_hybrid_get_plugin(const char *plugin_name, kupl_sched_hybrid_t *sched_hybrid,
+                                                            int level)
 {
     if (kupl_unlikely(kupl_sched_plugin_find(plugin_name, &sched_hybrid->hybrid_plugin[level].plugin,
-        &sched_hybrid->hybrid_plugin[level].plugin_property) != KUPL_OK)) {
+                                             &sched_hybrid->hybrid_plugin[level].plugin_property) != KUPL_OK)) {
         if (!level) {
             kupl_warn("invalid env: KUPL_SCHED_POLICY,"
-                " plugin: %s not found. so select default plugin sspe for outer level.", plugin_name);
+                      " plugin: %s not found. so select default plugin sspe for outer level.",
+                      plugin_name);
             kupl_sched_plugin_find("sspe", &sched_hybrid->hybrid_plugin[level].plugin,
-                                    &sched_hybrid->hybrid_plugin[level].plugin_property);
+                                   &sched_hybrid->hybrid_plugin[level].plugin_property);
         } else {
             kupl_warn("invalid env: KUPL_SCHED_POLICY,"
-                " plugin: %s not found. so select default plugin static_mq for inner level.", plugin_name);
+                      " plugin: %s not found. so select default plugin static_mq for inner level.",
+                      plugin_name);
             kupl_sched_plugin_find("static_mq", &sched_hybrid->hybrid_plugin[level].plugin,
-                                    &sched_hybrid->hybrid_plugin[level].plugin_property);
+                                   &sched_hybrid->hybrid_plugin[level].plugin_property);
         }
     }
 }
 
-static void* kupl_sched_hybrid_create()
+static void *kupl_sched_hybrid_create()
 {
     kupl_sched_hybrid_t *sched_hybrid = (kupl_sched_hybrid_t *)kupl_calloc(1, sizeof(kupl_sched_hybrid_t));
     if (sched_hybrid == nullptr) {
@@ -120,8 +120,8 @@ static int kupl_sched_hybrid_add_tb(void *sched, kupl_taskbase_t *tb)
     if (!KUPL_ATOMIC_LD_RLX(&sched_hybrid->hybrid_plugin[plugin_idx].plugin_using)) {
         sched_hybrid->hybrid_plugin[plugin_idx].plugin_using = true;
     }
-    return sched_hybrid->hybrid_plugin[plugin_idx].plugin.
-           add_tb(sched_hybrid->hybrid_plugin[plugin_idx].plugin_sched, tb);
+    return sched_hybrid->hybrid_plugin[plugin_idx].plugin.add_tb(sched_hybrid->hybrid_plugin[plugin_idx].plugin_sched,
+                                                                 tb);
 }
 
 static kupl_taskbase_t *kupl_sched_hybrid_get_tb(void *sched, kupl_compute_place_t cp)
@@ -150,7 +150,7 @@ static const kupl_sched_plugin_api_t KUPL_SCHED_PLUGIN_GLOBAL_VAR(hybrid) = {
     .get_tb = kupl_sched_hybrid_get_tb,
 };
 
-const kupl_sched_plugin_api_t* kupl_sched_hybrid_get_instance()
+const kupl_sched_plugin_api_t *kupl_sched_hybrid_get_instance()
 {
     return &KUPL_SCHED_PLUGIN_GLOBAL_VAR(hybrid);
 }

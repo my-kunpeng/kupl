@@ -56,11 +56,11 @@ static int kupl_tal_trylock(kupl_lock_t *lock)
     return KUPL_ATOMIC_CAS_STR_ACQ2RLX(&raw->head, head, head + 1);
 }
 
-kupl_lock_t* kupl_ticket_array_lock_init()
+kupl_lock_t *kupl_ticket_array_lock_init()
 {
     const kupl_host_info_t *info = kupl_get_host_info();
     int count = info->pu_cnt * TWO;
-    kupl_lock_t* lock = (kupl_lock_t *)kupl_calloc(1, sizeof(kupl_lock_t));
+    kupl_lock_t *lock = (kupl_lock_t *)kupl_calloc(1, sizeof(kupl_lock_t));
     if (kupl_unlikely(lock == nullptr)) {
         return nullptr;
     }

@@ -13,7 +13,7 @@
 #define KUPL_PTHREAD_SPINLOCK_H
 
 typedef struct kupl_lock kupl_lock_t;
-kupl_lock_t* kupl_pthread_spinlock_init(void);
+kupl_lock_t *kupl_pthread_spinlock_init(void);
 void kupl_pthread_spinlock_fini(kupl_lock_t *lock);
 
 #endif

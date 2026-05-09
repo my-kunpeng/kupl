@@ -109,14 +109,13 @@ static int do_bcast_linear_topo(void *buffer, int data_size, int root, kupl_shm_
         kupl_memcpy(buffer, local_leader_ptr, (size_t)(data_size));
     }
     kupl_shm_win_query(notify_root_win, local_leader_id, &notify_root_flags);
-    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize),
-                myid, local_leader_id);
+    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize), myid,
+                local_leader_id);
     return KUPL_OK;
 }
 
 static int do_bcast_linear_opt(void *buffer, int data_size, int root, kupl_shm_comm_h comm, kupl_shm_win_h win,
-                               kupl_shm_win_h notify_root_win, kupl_shm_win_h notify_others_win,
-                               kupl_shm_win_h p2p_win)
+                               kupl_shm_win_h notify_root_win, kupl_shm_win_h notify_others_win, kupl_shm_win_h p2p_win)
 {
     int myid = comm->rank;
     int numprocs = comm->size;
@@ -235,8 +234,8 @@ static int do_bcast_linear_topo_opt(void *buffer, int data_size, int root, kupl_
     if (kupl_unlikely(ret == KUPL_ERROR)) {
         return KUPL_ERROR;
     }
-    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize),
-                myid, local_leader_id);
+    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize), myid,
+                local_leader_id);
 
     if (myid != local_leader_id) {
         ret = kupl_shm_win_query(win, local_leader_id, &local_leader_ptr);
@@ -244,8 +243,7 @@ static int do_bcast_linear_topo_opt(void *buffer, int data_size, int root, kupl_
             return KUPL_ERROR;
         }
         local_leader_ptr = (char *)local_leader_ptr + win->offset;
-        kupl_memcpy((char *)buffer + leader_memcpy_size,
-                    (char *)local_leader_ptr + leader_memcpy_size,
+        kupl_memcpy((char *)buffer + leader_memcpy_size, (char *)local_leader_ptr + leader_memcpy_size,
                     (size_t)left_memcpy_size);
     } else {
         for (int i = myid + 1; i < kupl_min(myid + subsize, numprocs); i++) {
@@ -268,8 +266,8 @@ static int do_bcast_linear_topo_opt(void *buffer, int data_size, int root, kupl_
     if (kupl_unlikely(ret == KUPL_ERROR)) {
         return KUPL_ERROR;
     }
-    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize),
-                myid, local_leader_id);
+    notify_root((int *)notify_root_flags, local_leader_id, kupl_min(numprocs, (ngroup + 1) * subsize), myid,
+                local_leader_id);
 
     if (myid != local_leader_id) {
         ret = kupl_shm_win_query(p2p_win, myid, &p2p_ptr);
@@ -330,8 +328,7 @@ static int do_bcast_ring_pipeline(void *buffer, int count, int root, kupl_shm_co
     return KUPL_OK;
 }
 
-static kupl_always_inline
-int calc_offset(int rank, int div, int rem)
+static kupl_always_inline int calc_offset(int rank, int div, int rem)
 {
     if (rank - 1 < rem) {
         return rank * (div + 1);
@@ -409,13 +406,12 @@ int kupl_do_bcast(kupl_shm_request_h request)
         case KUPL_SHM_BCAST_ALGO_LINEAR:
             return do_bcast_linear(buffer, data_size, root, comm, win, notify_root_win, notify_others_win);
         case KUPL_SHM_BCAST_ALGO_LINEAR_OPT:
-            return do_bcast_linear_opt(buffer, data_size, root, comm, win,
-                                       notify_root_win, notify_others_win, p2p_win);
+            return do_bcast_linear_opt(buffer, data_size, root, comm, win, notify_root_win, notify_others_win, p2p_win);
         case KUPL_SHM_BCAST_ALGO_TOPO_AWARE_LINEAR:
             return do_bcast_linear_topo(buffer, data_size, root, comm, win, notify_root_win, notify_others_win);
         case KUPL_SHM_BCAST_ALGO_TOPO_AWARE_LINEAR_OPT:
-            return do_bcast_linear_topo_opt(buffer, data_size, root, comm, win,
-                                            notify_root_win, notify_others_win, p2p_win);
+            return do_bcast_linear_topo_opt(buffer, data_size, root, comm, win, notify_root_win, notify_others_win,
+                                            p2p_win);
         case KUPL_SHM_BCAST_ALGO_RING_PIPELINE:
             return do_bcast_ring_pipeline(buffer, data_size, root, comm, win, notify_root_win, notify_others_win);
         case KUPL_SHM_BCAST_ALGO_LINEAR_SCATTER_LINEAR_ALLGATHER:

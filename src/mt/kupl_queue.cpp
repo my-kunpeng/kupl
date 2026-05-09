@@ -118,13 +118,13 @@ void kupl_wait_sdma_request_in_queue(void *args)
         kupl_sdma_request_h req = *it;
         req->event->lock->lock(req->event->lock);
         if (req->flag) {
-            req->flag =false;
-            sdma_request_t* request = &req->request;
+            req->flag = false;
+            sdma_request_t *request = &req->request;
             kupl_sdma_wait_req(queue, request);
             kupl_event_set_status(req->event, KUPL_EVENT_STATUS_COMPLETE);
         }
         req->event->q_set->erase(remove(req->event->q_set->begin(), req->event->q_set->end(), queue),
-            req->event->q_set->end());
+                                 req->event->q_set->end());
 
         req->event->lock->unlock(req->event->lock);
         it = (*(queue->req_set)).erase(it);
@@ -248,8 +248,7 @@ int kupl_queue_submit_request(kupl_queue_t *queue)
 
 int kupl_queue_submit(kupl_queue_t *queue, kupl_queue_item_desc_t *desc)
 {
-    if (kupl_unlikely(queue == nullptr || desc == nullptr ||
-        desc->func == nullptr)) {
+    if (kupl_unlikely(queue == nullptr || desc == nullptr || desc->func == nullptr)) {
         return kupl_log_error_return(WARN, "queue submit with invalid params");
     }
     if ((desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME) && desc->name == nullptr) {
@@ -277,7 +276,7 @@ int kupl_queue_submit(kupl_queue_t *queue, kupl_queue_item_desc_t *desc)
     }
     const char *name = desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME ? desc->name : "auto";
     uint64_t field_mask = queue->priority < 0 ? KUPL_TB_DESC_FIELD_NAME :
-                          KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
+                                                KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
     void *tb_args;
     if (desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_ARGS_SIZE) {
         memcpy(event->task->udata, desc->args, desc->args_size);
@@ -322,158 +321,156 @@ int kupl_queue_submit(kupl_queue_t *queue, kupl_queue_item_desc_t *desc)
 }
 
 namespace kupl {
-    using kernel_type = std::function<void(const kupl_nd_range_t *)>;
-    struct kernel_data {
-        kupl_nd_range_t                 range;
-        kupl_egroup_h                   egroup;
-        uint64_t                        field_mask;
-        kernel_type                     func;
+using kernel_type = std::function<void(const kupl_nd_range_t *)>;
+struct kernel_data {
+    kupl_nd_range_t range;
+    kupl_egroup_h egroup;
+    uint64_t field_mask;
+    kernel_type func;
+};
+
+static void lambda_kernel(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
+{
+    (void)tid;
+    (void)tnum;
+    auto data = (kernel_data *)args;
+    data->func(nd_range);
+}
+
+static void lambda_kernel_wrapper(void *args)
+{
+    auto data = (kernel_data *)args;
+    kupl_parallel_for_desc_t desc;
+    desc.field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT;
+    desc.range = &data->range;
+    desc.egroup = data->egroup;
+    desc.concurrency = KUPL_CONCURRENCY_DEFAULT;
+    desc.policy = KUPL_LOOP_POLICY_TASK;
+    kupl_parallel_for(&desc, lambda_kernel, data);
+}
+
+static int queue_submit_check(kupl_queue_kernel_desc_t *desc)
+{
+    // range
+    auto range = desc->range;
+    if (range == nullptr) {
+        return KUPL_ERROR;
+    }
+    if (range->dim != 1) {
+        return KUPL_ERROR;
+    }
+    if (kupl_check_range(range, KUPL_LOOP_POLICY_TASK) != KUPL_OK) {
+        return KUPL_ERROR;
+    }
+    // egroup
+    if (desc->egroup == nullptr) {
+        return KUPL_ERROR;
+    }
+    if (kupl_egroup_get_cur_size(desc->egroup) <= 0) {
+        return KUPL_ERROR;
+    }
+    // name
+    if (desc->field_mask & KUPL_QUEUE_KERNEL_DESC_FIELD_NAME) {
+        if (desc->name == nullptr) {
+            return KUPL_ERROR;
+        }
+    }
+    return KUPL_OK;
+}
+
+int queue_submit(kupl_queue_h queue, kupl_queue_kernel_desc_t *desc,
+                 const std::function<void(const kupl_nd_range_t *)> &kernel)
+{
+    if (kupl_unlikely(queue == nullptr || desc == nullptr || kernel == nullptr)) {
+        return kupl_log_error_return(WARN, "queue submit lambda with invalid params");
+    }
+    if (queue_submit_check(desc) != KUPL_OK) {
+        return kupl_log_error_return(WARN, "queue submit lambda with invalid desc");
+    }
+
+    // event no need to destroy
+    kupl_event_t *event = kupl_event_create_with_udata(sizeof(kernel_data));
+    if (kupl_unlikely(event == nullptr)) {
+        return KUPL_ERROR;
+    }
+
+    kernel_data *data = reinterpret_cast<kernel_data *>(event->task->udata);
+    data->field_mask = desc->field_mask;
+    data->range = *desc->range;
+    data->egroup = desc->egroup;
+    data->func = kernel;
+
+    const char *kernel_name = desc->field_mask & KUPL_QUEUE_KERNEL_DESC_FIELD_NAME ? desc->name : "auto";
+
+    kupl_tb_desc_t tb_desc = {
+        .field_mask = KUPL_TB_DESC_FIELD_NAME,
+        .func = lambda_kernel_wrapper,
+        .args = data,
+        .name = kernel_name,
     };
 
-    static void lambda_kernel(kupl_nd_range_t *nd_range, void *args, int tid, int tnum)
-    {
-        (void)tid;
-        (void)tnum;
-        auto data = (kernel_data *)args;
-        data->func(nd_range);
-    }
-
-    static void lambda_kernel_wrapper(void *args)
-    {
-        auto data = (kernel_data *)args;
-        kupl_parallel_for_desc_t desc;
-        desc.field_mask = KUPL_PARALLEL_FOR_DESC_FIELD_DEFAULT;
-        desc.range = &data->range;
-        desc.egroup = data->egroup;
-        desc.concurrency = KUPL_CONCURRENCY_DEFAULT;
-        desc.policy = KUPL_LOOP_POLICY_TASK;
-        kupl_parallel_for(&desc, lambda_kernel, data);
-    }
-
-    static int queue_submit_check(kupl_queue_kernel_desc_t *desc)
-    {
-        // range
-        auto range = desc->range;
-        if (range == nullptr) {
-            return KUPL_ERROR;
-        }
-        if (range->dim != 1) {
-            return KUPL_ERROR;
-        }
-        if (kupl_check_range(range, KUPL_LOOP_POLICY_TASK) != KUPL_OK) {
-            return KUPL_ERROR;
-        }
-        // egroup
-        if (desc->egroup == nullptr) {
-            return KUPL_ERROR;
-        }
-        if (kupl_egroup_get_cur_size(desc->egroup) <= 0) {
-            return KUPL_ERROR;
-        }
-        // name
-        if (desc->field_mask & KUPL_QUEUE_KERNEL_DESC_FIELD_NAME) {
-            if (desc->name == nullptr) {
-                return KUPL_ERROR;
-            }
-        }
-        return KUPL_OK;
-    }
-
-    int queue_submit(kupl_queue_h queue, kupl_queue_kernel_desc_t *desc,
-                     const std::function<void(const kupl_nd_range_t *)>& kernel)
-    {
-        if (kupl_unlikely(queue == nullptr || desc == nullptr || kernel == nullptr)) {
-            return kupl_log_error_return(WARN, "queue submit lambda with invalid params");
-        }
-        if (queue_submit_check(desc) != KUPL_OK) {
-            return kupl_log_error_return(WARN, "queue submit lambda with invalid desc");
-        }
-
-        // event no need to destroy
-        kupl_event_t *event = kupl_event_create_with_udata(sizeof(kernel_data));
-        if (kupl_unlikely(event == nullptr)) {
-            return KUPL_ERROR;
-        }
-
-        kernel_data *data = reinterpret_cast<kernel_data *>(event->task->udata);
-        data->field_mask = desc->field_mask;
-        data->range = *desc->range;
-        data->egroup = desc->egroup;
-        data->func = kernel;
-
-        const char *kernel_name = desc->field_mask & KUPL_QUEUE_KERNEL_DESC_FIELD_NAME ? desc->name : "auto";
-
-        kupl_tb_desc_t tb_desc = {
-            .field_mask = KUPL_TB_DESC_FIELD_NAME,
-            .func = lambda_kernel_wrapper,
-            .args = data,
-            .name = kernel_name,
-        };
-
-        int ret = kupl_event_init(event, queue, &tb_desc, KUPL_EVENT_TYPE_KERNEL);
-        if (kupl_unlikely(ret != KUPL_OK)) {
-            kupl_event_destroy(event);
-            return ret;
-        }
-        kupl_enqueue_event(queue, event);
-        return KUPL_OK;
-    }
-
-    int queue_submit(kupl_queue_h queue, kupl_queue_item_desc_t *desc,
-                     const std::function<void(void)> &func)
-    {
-        if (kupl_unlikely(queue == nullptr || desc == nullptr ||
-            func == nullptr)) {
-            return kupl_log_error_return(WARN, "queue submit with invalid params");
-        }
-        if ((desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME) && desc->name == nullptr) {
-            return kupl_log_error_return(WARN, "queue submit with invalid name");
-        }
-        queue->lock->lock(queue->lock);
-        if (queue->event_count == 0) {
-            if (kupl_unlikely(KUPL_OK != kupl_queue_submit_request(queue))) {
-                queue->lock->unlock(queue->lock);
-                return KUPL_ERROR;
-            }
-        }
-        queue->lock->unlock(queue->lock);
-
-        // event no need to destroy
-        kupl_event_t *event = kupl_event_create_with_udata(sizeof(lambda_func_data));
-        if (kupl_unlikely(event == nullptr)) {
-            return KUPL_ERROR;
-        }
-        lambda_func_data *data = reinterpret_cast<lambda_func_data *>(event->task->udata);
-        memset((void*)data, 0, sizeof(lambda_func_data));
-        data->func = func;
-        const char *name = desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME ? desc->name : "auto";
-        uint64_t field_mask = queue->priority < 0 ? KUPL_TB_DESC_FIELD_NAME :
-                              KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
-        kupl_tb_desc_t tb_desc = {
-            .field_mask = field_mask,
-            .func = lambda_func,
-            .args = data,
-            .name = name,
-            .priority = queue->priority,
-        };
-
-        if ((desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP) && (desc->egroup != nullptr)) {
-            tb_desc.egroup = desc->egroup;
-            tb_desc.executor_id = (int)kupl_egroup_master_eid(desc->egroup);
-            tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EGROUP;
-            tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EXECUTOR_ID;
-        }
-
-        int ret = kupl_event_init(event, queue, &tb_desc, KUPL_EVENT_TYPE_KERNEL);
-        if (kupl_likely(ret == KUPL_OK)) {
-            kupl_enqueue_event(queue, event);
-        } else {
-            kupl_event_destroy(event);
-        }
+    int ret = kupl_event_init(event, queue, &tb_desc, KUPL_EVENT_TYPE_KERNEL);
+    if (kupl_unlikely(ret != KUPL_OK)) {
+        kupl_event_destroy(event);
         return ret;
     }
-
+    kupl_enqueue_event(queue, event);
+    return KUPL_OK;
 }
+
+int queue_submit(kupl_queue_h queue, kupl_queue_item_desc_t *desc, const std::function<void(void)> &func)
+{
+    if (kupl_unlikely(queue == nullptr || desc == nullptr || func == nullptr)) {
+        return kupl_log_error_return(WARN, "queue submit with invalid params");
+    }
+    if ((desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME) && desc->name == nullptr) {
+        return kupl_log_error_return(WARN, "queue submit with invalid name");
+    }
+    queue->lock->lock(queue->lock);
+    if (queue->event_count == 0) {
+        if (kupl_unlikely(KUPL_OK != kupl_queue_submit_request(queue))) {
+            queue->lock->unlock(queue->lock);
+            return KUPL_ERROR;
+        }
+    }
+    queue->lock->unlock(queue->lock);
+
+    // event no need to destroy
+    kupl_event_t *event = kupl_event_create_with_udata(sizeof(lambda_func_data));
+    if (kupl_unlikely(event == nullptr)) {
+        return KUPL_ERROR;
+    }
+    lambda_func_data *data = reinterpret_cast<lambda_func_data *>(event->task->udata);
+    memset((void *)data, 0, sizeof(lambda_func_data));
+    data->func = func;
+    const char *name = desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_NAME ? desc->name : "auto";
+    uint64_t field_mask = queue->priority < 0 ? KUPL_TB_DESC_FIELD_NAME :
+                                                KUPL_TB_DESC_FIELD_NAME | KUPL_TB_DESC_FIELD_PRIORITY;
+    kupl_tb_desc_t tb_desc = {
+        .field_mask = field_mask,
+        .func = lambda_func,
+        .args = data,
+        .name = name,
+        .priority = queue->priority,
+    };
+
+    if ((desc->field_mask & KUPL_QUEUE_ITEM_DESC_FIELD_EGROUP) && (desc->egroup != nullptr)) {
+        tb_desc.egroup = desc->egroup;
+        tb_desc.executor_id = (int)kupl_egroup_master_eid(desc->egroup);
+        tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EGROUP;
+        tb_desc.field_mask |= KUPL_TB_DESC_FIELD_EXECUTOR_ID;
+    }
+
+    int ret = kupl_event_init(event, queue, &tb_desc, KUPL_EVENT_TYPE_KERNEL);
+    if (kupl_likely(ret == KUPL_OK)) {
+        kupl_enqueue_event(queue, event);
+    } else {
+        kupl_event_destroy(event);
+    }
+    return ret;
+}
+
+} // namespace kupl
 
 kupl_queue_h kupl_queue_acquire(int index)
 {
@@ -536,7 +533,7 @@ int kupl_queue_wait_all()
 {
     int status = KUPL_OK;
     for (auto it = g_queue_table->begin(); it != g_queue_table->end(); ++it) {
-        const auto& index = it->first;
+        const auto &index = it->first;
         if (kupl_queue_wait(it->second) != KUPL_OK) {
             status = KUPL_ERROR;
             kupl_error("kupl_queue_wait failed, index=%d", index);
@@ -551,8 +548,8 @@ int kupl_queue_init()
     g_queue_table_mutex = new (std::nothrow) std::mutex();
     g_egroup_table = new (std::nothrow) std::unordered_map<uint64_t, kupl_egroup_h>();
     g_egroup_table_mutex = new (std::nothrow) std::mutex();
-    if (kupl_unlikely((g_queue_table == nullptr) || (g_queue_table_mutex == nullptr) ||
-        (g_egroup_table == nullptr) || (g_egroup_table_mutex == nullptr))) {
+    if (kupl_unlikely((g_queue_table == nullptr) || (g_queue_table_mutex == nullptr) || (g_egroup_table == nullptr) ||
+                      (g_egroup_table_mutex == nullptr))) {
         goto error;
     }
     return KUPL_OK;
@@ -568,7 +565,7 @@ void kupl_queue_fini()
         g_egroup_table_mutex = nullptr;
     }
     if (g_egroup_table != nullptr) {
-        for (auto& it : *g_egroup_table) {
+        for (auto &it : *g_egroup_table) {
             kupl_egroup_destroy(it.second);
         }
         delete g_egroup_table;
@@ -581,10 +578,10 @@ void kupl_queue_fini()
     if (g_queue_table != nullptr) {
         std::vector<kupl_queue_h> queue_vec;
         queue_vec.reserve(g_queue_table->size());
-        for (auto& kv : *g_queue_table) {
+        for (auto &kv : *g_queue_table) {
             queue_vec.push_back(kv.second);
         }
-        for (auto& q : queue_vec) {
+        for (auto &q : queue_vec) {
             kupl_queue_destroy(q);
         }
         delete g_queue_table;

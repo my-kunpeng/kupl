@@ -51,7 +51,7 @@ static int executor_setaffinity(int core_id)
     return KUPL_OK;
 }
 
-static void* executor_body(void *args)
+static void *executor_body(void *args)
 {
     kupl_executor_base_t *exec = (kupl_executor_base_t *)args;
     executor_setaffinity(exec->core_id);
@@ -84,11 +84,9 @@ static void executor_backend_fini(void *args)
 
 void kupl_set_pt_executor_ops(kupl_executor_ops_t &ops)
 {
-    ops = {
-        .init         = executor_backend_init,
-        .fini         = executor_backend_fini,
-        .set_affinity = executor_setaffinity,
-        .set_geid     = kupl_pt_set_global_executor_id,
-        .get_geid     = kupl_pt_get_global_executor_id
-    };
+    ops = {.init = executor_backend_init,
+           .fini = executor_backend_fini,
+           .set_affinity = executor_setaffinity,
+           .set_geid = kupl_pt_set_global_executor_id,
+           .get_geid = kupl_pt_get_global_executor_id};
 }

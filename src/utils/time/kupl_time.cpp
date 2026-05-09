@@ -17,25 +17,23 @@
 #include "utils/sys/kupl_compiler.h"
 #include "utils/debug/kupl_log.h"
 
-#define VTC_FACTOR  1000
-#define S2U_FACTOR  1000000         // 1s = 1000000us
-#define S2N_FACTOR  1000000000      // 1s = 1000000000ns
+#define VTC_FACTOR 1000
+#define S2U_FACTOR 1000000    // 1s = 1000000us
+#define S2N_FACTOR 1000000000 // 1s = 1000000000ns
 
 static uint64_t g_nanoSecondsPerTick = 1;
 
 /**
  * @brief ARM architecture hardware monotonic
  */
-static kupl_always_inline
-uint64_t kupl_arm_virtual_timer_count()
+static kupl_always_inline uint64_t kupl_arm_virtual_timer_count()
 {
     uint64_t counter;
     __asm__ volatile("mrs %0, cntvct_el0" : "=r"(counter));
     return counter;
 }
 
-static kupl_always_inline
-uint32_t kupl_arm_virtual_timer_freq()
+static kupl_always_inline uint32_t kupl_arm_virtual_timer_freq()
 {
     union {
         uint64_t freq;
@@ -46,7 +44,7 @@ uint32_t kupl_arm_virtual_timer_freq()
     } counter;
 
     __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(counter.freq));
-    return counter.bits.low;    /* Top 32 bits are reserved */
+    return counter.bits.low; /* Top 32 bits are reserved */
 }
 
 static uint64_t kupl_arm_now_ns()
@@ -63,16 +61,14 @@ void kupl_time_init()
     }
 }
 
-void kupl_time_fini()
-{
-}
+void kupl_time_fini() {}
 
 uint64_t kupl_now_ns()
 {
     return kupl_arm_now_ns();
 }
 
-void kupl_timestamp(char* buffer, size_t buffersize)
+void kupl_timestamp(char *buffer, size_t buffersize)
 {
     // check the pointer
     if (kupl_unlikely(buffer == nullptr)) {

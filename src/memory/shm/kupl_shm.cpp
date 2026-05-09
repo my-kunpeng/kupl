@@ -41,7 +41,6 @@ static kupl_dl_module_t *g_kupl_shm_xpmem_module = nullptr;
 
 kupl_shm_info shm_info = {.is_contig = 0};
 
-
 static void kupl_shm_load_module_posix()
 {
     kupl_shm_posix_reg_ops();
@@ -221,8 +220,7 @@ int kupl_shm_fence_create(kupl_shm_win_h win)
     size_t size = KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * ((size_t)peer_flag_num + (size_t)comm_flag_num);
     win->fence_win_ptr = (void *)kupl_malloc_inner(sizeof(kupl_shm_win_h));
 
-    ret = kupl_shm_win_alloc_inner(size, win->comm, &baseptr,
-                                   (kupl_shm_win_h *)win->fence_win_ptr, 0);
+    ret = kupl_shm_win_alloc_inner(size, win->comm, &baseptr, (kupl_shm_win_h *)win->fence_win_ptr, 0);
     if (ret != KUPL_OK) {
         kupl_shm_win_free_inner(*(kupl_shm_win_h *)win->fence_win_ptr, 0);
         return KUPL_ERROR;
@@ -298,7 +296,7 @@ int kupl_shm_win_free(kupl_shm_win_h win)
 int kupl_shm_win_alloc_inner(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag)
 {
     int numprocs = comm->size;
-    kupl_vla<size_t>offset_list((size_t)numprocs);
+    kupl_vla<size_t> offset_list((size_t)numprocs);
     if (kupl_unlikely(offset_list.get_data() == nullptr)) {
         return KUPL_ERROR;
     }
@@ -306,7 +304,7 @@ int kupl_shm_win_alloc_inner(size_t size, kupl_shm_comm_h comm, void **baseptr, 
         offset_list[i] = 0;
     }
     if (shm_info.is_contig) {
-        kupl_vla<size_t>size_list((size_t)numprocs);
+        kupl_vla<size_t> size_list((size_t)numprocs);
         if (kupl_unlikely(size_list.get_data() == nullptr)) {
             return KUPL_ERROR;
         }

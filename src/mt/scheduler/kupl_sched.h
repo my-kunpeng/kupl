@@ -48,9 +48,9 @@ void kupl_sched_expand_fini(void);
  */
 void kupl_sched_fini(void);
 
-kupl_sched_t* kupl_get_global_sched();
+kupl_sched_t *kupl_get_global_sched();
 
-kupl_sched_t* kupl_get_global_sched_expand();
+kupl_sched_t *kupl_get_global_sched_expand();
 
 /**
  * @brief Create a sched instance with plugin_name
@@ -58,7 +58,7 @@ kupl_sched_t* kupl_get_global_sched_expand();
  * @param plugin_name   the name of plugin
  * @return              the handler of sched
  */
-kupl_sched_t* kupl_sched_create(const char *plugin_name);
+kupl_sched_t *kupl_sched_create(const char *plugin_name);
 
 /**
  * @brief Cleanup the sched, and will set the sched in finished state

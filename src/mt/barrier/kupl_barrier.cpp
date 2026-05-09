@@ -74,8 +74,7 @@ void kupl_barrier_prepare(kupl_barrier_h barrier, kupl_graph_h graph, int num_th
     }
 
     if (kupl_unlikely(num_threads > barrier->max_size)) {
-        kupl_error("num_threads %d is great than max_threads %d",
-                   num_threads, barrier->max_size);
+        kupl_error("num_threads %d is great than max_threads %d", num_threads, barrier->max_size);
         return;
     }
 
@@ -152,48 +151,48 @@ void kupl_barrier_set_flag_idx(kupl_barrier_h barrier, int local_id, int flag_id
 
 namespace kupl {
 
-    void FlagBarrier::notify(kupl_egroup_h egroup, int num_threads)
-    {
-        KUPL_MB();
-        KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, {
-            flags_[eid].vf = FlagBarrier::FLAG_READY;
-        });
-    }
-
-    bool FlagBarrier::arrive(int geid)
-    {
-        bool ret = flags_[geid].vf == FlagBarrier::FLAG_READY;
-        if (ret) {
-            flags_[geid].vf = FlagBarrier::FLAG_ARRIVED;
-        }
-        return ret;
-    }
-
-    void FlagBarrier::leave(kupl_egroup_h egroup, int num_threads, int master_eid)
-    {
-        int geid = kupl_get_executor_num();
-        if (master_eid == geid) {
-            // master wait slave
-            KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, {
-                if ((int)eid != geid) {
-                    while (FlagBarrier::FLAG_LEAVE != flags_[eid].vf);
-                }
-            });
-        }
-        KUPL_MB();
-        flags_[geid].vf = FlagBarrier::FLAG_LEAVE;
-    }
-
-    void FlagBarrier::wait(kupl_egroup_h egroup, int num_threads)
-    {
-        uint32_t geid = static_cast<uint32_t>(kupl_get_executor_num());
-        KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, {
-            if (eid == geid) {
-                auto sched = kupl_get_global_sched();
-                kupl_sched_execute_tb(sched);
-            }
-            while (FlagBarrier::FLAG_LEAVE != flags_[eid].vf);
-        });
-        KUPL_MB();
-    }
+void FlagBarrier::notify(kupl_egroup_h egroup, int num_threads)
+{
+    KUPL_MB();
+    KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, { flags_[eid].vf = FlagBarrier::FLAG_READY; });
 }
+
+bool FlagBarrier::arrive(int geid)
+{
+    bool ret = flags_[geid].vf == FlagBarrier::FLAG_READY;
+    if (ret) {
+        flags_[geid].vf = FlagBarrier::FLAG_ARRIVED;
+    }
+    return ret;
+}
+
+void FlagBarrier::leave(kupl_egroup_h egroup, int num_threads, int master_eid)
+{
+    int geid = kupl_get_executor_num();
+    if (master_eid == geid) {
+        // master wait slave
+        KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, {
+            if ((int)eid != geid) {
+                while (FlagBarrier::FLAG_LEAVE != flags_[eid].vf)
+                    ;
+            }
+        });
+    }
+    KUPL_MB();
+    flags_[geid].vf = FlagBarrier::FLAG_LEAVE;
+}
+
+void FlagBarrier::wait(kupl_egroup_h egroup, int num_threads)
+{
+    uint32_t geid = static_cast<uint32_t>(kupl_get_executor_num());
+    KUPL_FOR_EACH_LIMIT_EGROUP(egroup, num_threads, eid, eidx, {
+        if (eid == geid) {
+            auto sched = kupl_get_global_sched();
+            kupl_sched_execute_tb(sched);
+        }
+        while (FlagBarrier::FLAG_LEAVE != flags_[eid].vf)
+            ;
+    });
+    KUPL_MB();
+}
+} // namespace kupl

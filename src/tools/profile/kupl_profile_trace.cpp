@@ -30,7 +30,7 @@
 
 #ifdef ENABLE_KUPL_TRACE
 struct profile_trace_event {
-    const char* name = nullptr;
+    const char *name = nullptr;
     uint64_t pid{};
     uint64_t tid{};
     uint64_t start{};
@@ -43,11 +43,11 @@ static void outputstream_close();
 static uint64_t g_ptrace_ts;
 static char ptrace_path[PTRACE_PATH_SIZE] = {};
 static int ptrace_executor_buffersize = 26214;
-static profile_trace_event** trace_event = nullptr;
-static int* executor_event_num = nullptr;
-static FILE** executor_outputstream = nullptr;
+static profile_trace_event **trace_event = nullptr;
+static int *executor_event_num = nullptr;
+static FILE **executor_outputstream = nullptr;
 static int ptrace_executor_count = 0;
-static char** filepath = nullptr;
+static char **filepath = nullptr;
 static int kupl_prof_level_trace;
 
 int get_kupl_prof_level_trace()
@@ -58,36 +58,35 @@ int get_kupl_prof_level_trace()
 static int outputstream_open()
 {
     const mode_t mk_mode = S_IRWXU | S_IRWXG | S_IRWXO;
-    executor_outputstream = (FILE**)calloc((size_t)ptrace_executor_count, sizeof(FILE*));
+    executor_outputstream = (FILE **)calloc((size_t)ptrace_executor_count, sizeof(FILE *));
     if (executor_outputstream == nullptr) {
         outputstream_close();
         return kupl_log_error_return(ERROR, "error in executor_outputstream malloc");
     }
 
-    filepath = (char**)calloc((size_t)ptrace_executor_count, sizeof(char*));  // allocte filepath list memory
+    filepath = (char **)calloc((size_t)ptrace_executor_count, sizeof(char *)); // allocte filepath list memory
     if (filepath == nullptr) {
         outputstream_close();
         return kupl_log_error_return(ERROR, "error in filepath malloc");
     }
 
-    if (mkdir(ptrace_path, mk_mode&(~umask(0))) == 0) {     // success create directory
+    if (mkdir(ptrace_path, mk_mode & (~umask(0))) == 0) { // success create directory
         kupl_debug("Directory created");
-    } else if (errno == EEXIST) {                            // multiple processes create a same directory
+    } else if (errno == EEXIST) { // multiple processes create a same directory
         kupl_debug("Directory already exists");
-    } else {                                                // other error
+    } else { // other error
         outputstream_close();
         return kupl_log_error_return(ERROR, "Directory create failed");
     }
 
     for (int eid = 0; eid < ptrace_executor_count; eid++) {
-        filepath[eid] =
-        (char*)malloc(sizeof(char) * MAX_LENGTH_FILENAME);  // allocte filepath memory one by one
+        filepath[eid] = (char *)malloc(sizeof(char) * MAX_LENGTH_FILENAME); // allocte filepath memory one by one
         if (filepath[eid] == nullptr) {
             outputstream_close();
             kupl_log_error_return(ERROR, "error in filepath malloc");
         }
-        sprintf(filepath[eid], "%sp_%d_e_%d", ptrace_path, getpid(), eid);  // assign filepath name
-        executor_outputstream[eid] = fopen(filepath[eid], "w+");    // open file in w+ mode(create, write and read)
+        sprintf(filepath[eid], "%sp_%d_e_%d", ptrace_path, getpid(), eid); // assign filepath name
+        executor_outputstream[eid] = fopen(filepath[eid], "w+"); // open file in w+ mode(create, write and read)
         if (executor_outputstream[eid] == nullptr) {
             outputstream_close();
             kupl_log_error_return(ERROR, "fail to open file: %s", filepath[eid]);
@@ -98,7 +97,7 @@ static int outputstream_open()
 
 static void outputstream_close()
 {
-    if (executor_outputstream == nullptr) {  // if executor_outputstream is null, filepath is null too
+    if (executor_outputstream == nullptr) { // if executor_outputstream is null, filepath is null too
         return;
     }
 
@@ -110,16 +109,16 @@ static void outputstream_close()
     // free all filepath
     for (int eid = 0; eid < ptrace_executor_count; eid++) {
         if (filepath[eid] == nullptr) {
-            continue;  // if this filepath is null, all the next filepath and outputstream is null
+            continue; // if this filepath is null, all the next filepath and outputstream is null
         }
-        if (access(filepath[eid], F_OK) == 0) {  // check file exist
+        if (access(filepath[eid], F_OK) == 0) { // check file exist
             if (remove(filepath[eid]) != 0) {   // try to remove file (may be no permission)
                 kupl_error("cannot remove file");
             }
         } else {
             kupl_error("file not exist");
         }
-        free(filepath[eid]);    // free filepath
+        free(filepath[eid]); // free filepath
         filepath[eid] = nullptr;
     }
     // close all outputstream
@@ -138,23 +137,19 @@ static void outputstream_close()
 
 static int flush_buffer(int eid, int size)
 {
-    constexpr const char *format =
-        "{\n"
-        "\"cat\":\"function\",\n"
-        "\"dur\":%Lf,\n"
-        "\"name\":\"%s\",\n"
-        "\"ph\":\"X\",\n"
-        "\"pid\":%lu,\n"
-        "\"tid\":%lu,\n"
-        "\"ts\":%Lf\n"
-        "}"
-        ",\n";
+    constexpr const char *format = "{\n"
+                                   "\"cat\":\"function\",\n"
+                                   "\"dur\":%Lf,\n"
+                                   "\"name\":\"%s\",\n"
+                                   "\"ph\":\"X\",\n"
+                                   "\"pid\":%lu,\n"
+                                   "\"tid\":%lu,\n"
+                                   "\"ts\":%Lf\n"
+                                   "}"
+                                   ",\n";
     for (int n = 0; n < size; ++n) {
-        if (fprintf(executor_outputstream[eid], format,
-                    (long double)(trace_event[eid][n].duration / 1000),
-                    trace_event[eid][n].name,
-                    trace_event[eid][n].pid,
-                    trace_event[eid][n].tid,
+        if (fprintf(executor_outputstream[eid], format, (long double)(trace_event[eid][n].duration / 1000),
+                    trace_event[eid][n].name, trace_event[eid][n].pid, trace_event[eid][n].tid,
                     (long double)trace_event[eid][n].start / 1000) < 0) {
             kupl_log_error_return(ERROR, "Fail to write into file!");
         }
@@ -172,7 +167,7 @@ static void stream_merging()
     char jsonname[MAX_LENGTH_FILENAME];
 
     // get current time stamp
-    char *time_buffer = (char*)calloc(TIME_BUF_SIZE, sizeof(char));
+    char *time_buffer = (char *)calloc(TIME_BUF_SIZE, sizeof(char));
     if (time_buffer == nullptr) {
         kupl_error("there is no memory for time buffer");
         return;
@@ -185,7 +180,7 @@ static void stream_merging()
     // input jsonname buffer
     sprintf(jsonname, "%s%s_ptrace_%d.json", ptrace_path, time_buffer, getpid());
     free(time_buffer);
-    FILE* out_json = fopen(jsonname, "w+");
+    FILE *out_json = fopen(jsonname, "w+");
     if (out_json == nullptr) {
         kupl_error("cannot open the json file");
         return;
@@ -200,8 +195,8 @@ static void stream_merging()
         if (flush_buffer(eid, executor_event_num[eid]) == KUPL_ERROR) {
             goto close_file;
         }
-        fseek(executor_outputstream[eid], 0, SEEK_SET);    // move to the head of file
-        kupl_vla<char>buffer(FLUSH_BUF_SIZE);
+        fseek(executor_outputstream[eid], 0, SEEK_SET); // move to the head of file
+        kupl_vla<char> buffer(FLUSH_BUF_SIZE);
 
         while (fgets(buffer.get_data(), FLUSH_BUF_SIZE, executor_outputstream[eid]) != nullptr) {
             fwrite(buffer.get_data(), sizeof(char), strlen(buffer.get_data()), out_json);
@@ -210,7 +205,7 @@ static void stream_merging()
             goto write_err;
         }
     }
-    fseek(out_json, REMOVE_LAST_COMMA_FLAG, SEEK_CUR);  // remove last comma
+    fseek(out_json, REMOVE_LAST_COMMA_FLAG, SEEK_CUR); // remove last comma
     if (fprintf(out_json, "\n]}\n") < 0) {
         goto write_err;
     }
@@ -223,15 +218,14 @@ close_file:
 
 static int create_executor_buffer()
 {
-    trace_event = (profile_trace_event **)malloc((size_t)ptrace_executor_count *
-                                                            sizeof(profile_trace_event *));
+    trace_event = (profile_trace_event **)malloc((size_t)ptrace_executor_count * sizeof(profile_trace_event *));
     if (trace_event == nullptr) {
         kupl_log_error_return(ERROR, "There is no memory for trace event");
     }
 
     for (int eid = 0; eid < ptrace_executor_count; eid++) {
         trace_event[eid] =
-        (profile_trace_event*)malloc((size_t)ptrace_executor_buffersize * sizeof(profile_trace_event));
+            (profile_trace_event *)malloc((size_t)ptrace_executor_buffersize * sizeof(profile_trace_event));
         if (trace_event[eid] == nullptr) {
             destroy_executor_buffer();
             kupl_log_error_return(ERROR, "There is no memory for trace event");
@@ -269,7 +263,7 @@ int kupl_ptrace_init()
     ptrace_executor_buffersize = kupl_config_get_value(KUPL_PTRACE_THREAD_BUFFER_SIZE);
     kupl_debug("kupl profile trace init");
     g_ptrace_ts = kupl_now_ns();
-    const kupl_host_info_t* host_info = kupl_get_host_info();
+    const kupl_host_info_t *host_info = kupl_get_host_info();
     ptrace_executor_count = host_info->avail_pu_cnt;
     if (ptrace_executor_count == 0) {
         kupl_log_error_return(ERROR, "ptrace executor count is 0");
@@ -301,7 +295,7 @@ void kupl_ptrace_fini()
         return;
     }
     kupl_debug("start kupl_ptrace_fini");
-    if (executor_event_num == nullptr) {    // init fail
+    if (executor_event_num == nullptr) { // init fail
         return;
     }
     stream_merging();

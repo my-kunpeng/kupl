@@ -22,10 +22,10 @@ extern "C" {
 #endif
 
 typedef struct kupl_graph {
-    kupl_dag_t              *dag;           // graph dependency
-    kupl_sched_t            *sched;         // scheduler
-    KUPL_ATOMIC_UINT32      count;          // task count
-    cpu_set_t               eid_set;        // graph affinity
+    kupl_dag_t *dag;          // graph dependency
+    kupl_sched_t *sched;      // scheduler
+    KUPL_ATOMIC_UINT32 count; // task count
+    cpu_set_t eid_set;        // graph affinity
 } kupl_graph_t;
 
 /**

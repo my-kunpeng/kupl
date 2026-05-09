@@ -22,48 +22,47 @@ typedef struct kupl_list {
 
 #define kupl_list_init(_list) (_list)->prev = (_list)->next = (_list)
 
-#define kupl_list_insert_before(_list, _elem)      \
-do {                                                \
-    (_elem)->prev = (_list)->prev;                  \
-    (_elem)->next = _list;                          \
-    (_list)->prev->next = _elem;                    \
-    (_list)->prev = _elem;                          \
-} while (0)
+#define kupl_list_insert_before(_list, _elem) \
+    do {                                      \
+        (_elem)->prev = (_list)->prev;        \
+        (_elem)->next = _list;                \
+        (_list)->prev->next = _elem;          \
+        (_list)->prev = _elem;                \
+    } while (0)
 
-#define kupl_list_insert_after(_list, _elem)       \
-do {                                                \
-    (_elem)->prev = _list;                          \
-    (_elem)->next = (_list)->next;                  \
-    (_list)->next->prev = _elem;                    \
-    (_list)->next = _elem;                          \
-} while (0)
+#define kupl_list_insert_after(_list, _elem) \
+    do {                                     \
+        (_elem)->prev = _list;               \
+        (_elem)->next = (_list)->next;       \
+        (_list)->next->prev = _elem;         \
+        (_list)->next = _elem;               \
+    } while (0)
 
-#define kupl_list_del(_elem)                       \
-do {                                                \
-    (_elem)->prev->next = (_elem)->next;            \
-    (_elem)->next->prev = (_elem)->prev;            \
-} while (0)
+#define kupl_list_del(_elem)                 \
+    do {                                     \
+        (_elem)->prev->next = (_elem)->next; \
+        (_elem)->next->prev = (_elem)->prev; \
+    } while (0)
 
 #define kupl_list_is_empty(_list) ((_list)->next == (_list))
 
 /**
  * @brief Singly Void* Node list put, every node is void* type pointer
  */
-#define kupl_sv_list_put(_head, _elem)             \
-do {                                                \
-    *(void **)(_elem) = _head;                      \
-    (_head) = (_elem);                              \
-} while (0)
+#define kupl_sv_list_put(_head, _elem) \
+    do {                               \
+        *(void **)(_elem) = _head;     \
+        (_head) = (_elem);             \
+    } while (0)
 
-#define kupl_sv_list_get(_head)                    \
-({                                                  \
-    void *_elem = (_head);                          \
-    if (_elem != nullptr) {                         \
-        (_head) = *((void **)_elem);                \
-    }                                               \
-    _elem;                                          \
-})
-
+#define kupl_sv_list_get(_head)          \
+    ({                                   \
+        void *_elem = (_head);           \
+        if (_elem != nullptr) {          \
+            (_head) = *((void **)_elem); \
+        }                                \
+        _elem;                           \
+    })
 
 typedef struct kupl_slist kupl_slist_t;
 
@@ -72,14 +71,13 @@ typedef struct kupl_slist kupl_slist_t;
  *
  */
 struct kupl_slist {
-    struct kupl_slist  *next;
-    void                *data;
+    struct kupl_slist *next;
+    void *data;
 };
 
-static kupl_always_inline
-kupl_slist_t* kupl_slist_create(kupl_slist_t *next, void *data, int geid)
+static kupl_always_inline kupl_slist_t *kupl_slist_create(kupl_slist_t *next, void *data, int geid)
 {
-    auto link = (kupl_slist_t*)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
+    auto link = (kupl_slist_t *)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
     if (kupl_likely(link != nullptr)) {
         link->next = next;
         link->data = data;
@@ -87,13 +85,12 @@ kupl_slist_t* kupl_slist_create(kupl_slist_t *next, void *data, int geid)
     return link;
 }
 
-static kupl_always_inline
-void kupl_slist_insert_front(kupl_slist_t **head, void *data, int geid)
+static kupl_always_inline void kupl_slist_insert_front(kupl_slist_t **head, void *data, int geid)
 {
     if (kupl_unlikely(head == nullptr)) {
         return;
     }
-    auto link = (kupl_slist_t*)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
+    auto link = (kupl_slist_t *)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
     if (kupl_likely(link != nullptr)) {
         link->next = *head;
         link->data = data;
@@ -101,13 +98,12 @@ void kupl_slist_insert_front(kupl_slist_t **head, void *data, int geid)
     }
 }
 
-static kupl_always_inline
-void kupl_slist_insert_behind(kupl_slist_t **head, void *data, int geid)
+static kupl_always_inline void kupl_slist_insert_behind(kupl_slist_t **head, void *data, int geid)
 {
     if (kupl_unlikely(head == nullptr || *head == nullptr)) {
         return;
     }
-    auto link = (kupl_slist_t*)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
+    auto link = (kupl_slist_t *)kupl_memory_alloc(sizeof(kupl_slist_t), geid);
     if (kupl_likely(link != nullptr)) {
         link->data = data;
         link->next = nullptr;
@@ -117,8 +113,7 @@ void kupl_slist_insert_behind(kupl_slist_t **head, void *data, int geid)
 }
 
 // delete current slist, point to next slist
-static kupl_always_inline
-void kupl_slist_destroy(kupl_slist_t **head, int geid)
+static kupl_always_inline void kupl_slist_destroy(kupl_slist_t **head, int geid)
 {
     if (kupl_unlikely(head == nullptr || *head == nullptr)) {
         return;
@@ -128,8 +123,7 @@ void kupl_slist_destroy(kupl_slist_t **head, int geid)
     kupl_memory_free(tmp, geid);
 }
 
-static kupl_always_inline
-void kupl_slist_destroy_all(kupl_slist_t **head, int geid)
+static kupl_always_inline void kupl_slist_destroy_all(kupl_slist_t **head, int geid)
 {
     while (*head != nullptr) {
         kupl_slist_t *tmp = *head;
@@ -138,8 +132,7 @@ void kupl_slist_destroy_all(kupl_slist_t **head, int geid)
     }
 }
 
-static kupl_always_inline
-uint32_t kupl_slist_count(kupl_slist_t *head)
+static kupl_always_inline uint32_t kupl_slist_count(kupl_slist_t *head)
 {
     uint32_t cnt = 0;
     while (head != nullptr) {

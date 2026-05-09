@@ -34,39 +34,39 @@ typedef struct range_chunk {
 } range_chunk_t;
 
 typedef union kupl_reduce_data {
-    int                     i;
-    float                   f;
-    double                  d;
-    std::complex<float>     fc;
-    std::complex<double>    dc;
-    void                    *p;
+    int i;
+    float f;
+    double d;
+    std::complex<float> fc;
+    std::complex<double> dc;
+    void *p;
 } kupl_reduce_data_t KUPL_ALIGN(128);
 
 struct kupl_pf {
-    int                         master_eid;
-    kupl_pf_reduce_func_t       rd_func;
-    kupl_reduce_args_t          *shared_args;
-    kupl_reduce_args_t          private_args;
-    kupl_reduce_item_t          *rd_item;
-    kupl_reduce_data_t          *rd_data;
-    int                         rd_num_max;
+    int master_eid;
+    kupl_pf_reduce_func_t rd_func;
+    kupl_reduce_args_t *shared_args;
+    kupl_reduce_args_t private_args;
+    kupl_reduce_item_t *rd_item;
+    kupl_reduce_data_t *rd_data;
+    int rd_num_max;
     struct aligned_index {
-        KUPL_ATOMIC_INT64       value;
-        int64_t                 target;
+        KUPL_ATOMIC_INT64 value;
+        int64_t target;
     } KUPL_ALIGN(128);
-    aligned_index               *chunk_index;
-    int64_t                     total_chunks;
-    range_chunk_t               chunk_info[KUPL_MAX_DIM_SIZE];
-    kupl_pf_policy_func_t       *policy_func;
-    kupl_pf_post_func_t         *post_func;
-    kupl_pf_func_t              func;
-    void                        *args;
-    kupl_nd_range_t             *range;
-    kupl_egroup_h               egroup;
-    int                         num_threads;
-    kupl_loop_policy_type_t     policy;
-    int64_t                     flag;
-    kupl_ult_t                  ult;
+    aligned_index *chunk_index;
+    int64_t total_chunks;
+    range_chunk_t chunk_info[KUPL_MAX_DIM_SIZE];
+    kupl_pf_policy_func_t *policy_func;
+    kupl_pf_post_func_t *post_func;
+    kupl_pf_func_t func;
+    void *args;
+    kupl_nd_range_t *range;
+    kupl_egroup_h egroup;
+    int num_threads;
+    kupl_loop_policy_type_t policy;
+    int64_t flag;
+    kupl_ult_t ult;
 };
 
 int kupl_pf_init(void);

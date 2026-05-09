@@ -47,7 +47,7 @@ extern "C" {
 typedef struct kupl_sched_plugin_property {
     const char *name;
     size_t private_data_len;
-    int score;                      /* higher score will be auto selected, when score is same will chose the last */
+    int score; /* higher score will be auto selected, when score is same will chose the last */
 } kupl_sched_plugin_property_t;
 
 /**
@@ -66,12 +66,12 @@ typedef void (*kupl_sched_plugin_fini_t)(void);
 /**
  * @brief Create one sched plugin instance
  */
-typedef void* (*kupl_sched_plugin_instance_create_t)(void);
+typedef void *(*kupl_sched_plugin_instance_create_t)(void);
 
 /**
  * @brief Expand one sched plugin instance
  */
-typedef void* (*kupl_sched_plugin_instance_expand_t)(void *sched);
+typedef void *(*kupl_sched_plugin_instance_expand_t)(void *sched);
 
 /**
  * @brief destroy the sched plugin instance
@@ -93,7 +93,7 @@ typedef int (*kupl_sched_add_ready_tb_t)(void *sched, kupl_taskbase_t *tb);
  *
  * @return          get one tb, NULL for no tb or some errors happen
  */
-typedef kupl_taskbase_t* (*kupl_sched_get_ready_tb_t)(void *sched, kupl_compute_place_t cp);
+typedef kupl_taskbase_t *(*kupl_sched_get_ready_tb_t)(void *sched, kupl_compute_place_t cp);
 
 /**
  * @brief Plugin's api
@@ -109,9 +109,9 @@ typedef struct kupl_scheduler_plugin_api {
     kupl_sched_get_ready_tb_t get_tb;
 } kupl_sched_plugin_api_t;
 
-#define KUPL_SCHED_PLUGIN_LIB_PREFIX                 "libsched_plugin_"
-#define KUPL_SCHED_PLUGIN_GLOBAL_VAR_PREFIX          "g_sched_plugin_"
-#define KUPL_SCHED_PLUGIN_GLOBAL_VAR(_plugin_name)    g_sched_plugin_ ## _plugin_name
+#define KUPL_SCHED_PLUGIN_LIB_PREFIX "libsched_plugin_"
+#define KUPL_SCHED_PLUGIN_GLOBAL_VAR_PREFIX "g_sched_plugin_"
+#define KUPL_SCHED_PLUGIN_GLOBAL_VAR(_plugin_name) g_sched_plugin_##_plugin_name
 
 struct kupl_mq_priority_cmp {
     bool operator()(const kupl_taskbase_t *a, const kupl_taskbase_t *b)
@@ -120,20 +120,19 @@ struct kupl_mq_priority_cmp {
     }
 };
 
-using kupl_mq_priority_queue_t = std::priority_queue<kupl_taskbase_t *,
-                                                      std::vector<kupl_taskbase_t *>, kupl_mq_priority_cmp>;
+using kupl_mq_priority_queue_t =
+    std::priority_queue<kupl_taskbase_t *, std::vector<kupl_taskbase_t *>, kupl_mq_priority_cmp>;
 
 typedef struct priority_queue {
-    kupl_mq_priority_queue_t   *q;
-    kupl_vector_t              *spsc;
-    kupl_lock_t                *add_lock;
-    kupl_lock_t                *get_lock;
-    KUPL_ATOMIC_INT            tb_cnt;
-    int                        size;
+    kupl_mq_priority_queue_t *q;
+    kupl_vector_t *spsc;
+    kupl_lock_t *add_lock;
+    kupl_lock_t *get_lock;
+    KUPL_ATOMIC_INT tb_cnt;
+    int size;
 } priority_queue_t;
 
-static kupl_always_inline
-void priority_queue_cleanup(priority_queue_t *queue)
+static kupl_always_inline void priority_queue_cleanup(priority_queue_t *queue)
 {
     if (kupl_unlikely(queue == nullptr)) {
         return;
@@ -145,8 +144,7 @@ void priority_queue_cleanup(priority_queue_t *queue)
     kupl_safe_free(queue);
 }
 
-static kupl_always_inline
-priority_queue_t *priority_queue_create(int size)
+static kupl_always_inline priority_queue_t *priority_queue_create(int size)
 {
     priority_queue_t *queue = (priority_queue_t *)kupl_malloc_inner(sizeof(priority_queue_t));
     if (queue == nullptr) {
@@ -156,8 +154,8 @@ priority_queue_t *priority_queue_create(int size)
     queue->spsc = kupl_vector_create((size_t)size, sizeof(kupl_taskbase_t *), "sched mq priority queue");
     queue->add_lock = kupl_lock_create(PTHREAD_SPINLOCK);
     queue->get_lock = kupl_lock_create(PTHREAD_SPINLOCK);
-    if (kupl_unlikely((queue->q == nullptr) || (queue->spsc == nullptr) ||
-                       (queue->add_lock == nullptr) || (queue->get_lock == nullptr))) {
+    if (kupl_unlikely((queue->q == nullptr) || (queue->spsc == nullptr) || (queue->add_lock == nullptr) ||
+                      (queue->get_lock == nullptr))) {
         goto err;
     }
     queue->tb_cnt = 0;
@@ -168,8 +166,7 @@ err:
     return nullptr;
 }
 
-static kupl_always_inline
-int priority_queue_add_tb(priority_queue_t *queue, kupl_taskbase_t *tb)
+static kupl_always_inline int priority_queue_add_tb(priority_queue_t *queue, kupl_taskbase_t *tb)
 {
     int err = KUPL_ERROR;
     if (kupl_unlikely(queue == nullptr)) {
@@ -183,8 +180,7 @@ int priority_queue_add_tb(priority_queue_t *queue, kupl_taskbase_t *tb)
     return err;
 }
 
-static kupl_always_inline
-kupl_taskbase_t *priority_queue_get_tb(priority_queue_t *queue)
+static kupl_always_inline kupl_taskbase_t *priority_queue_get_tb(priority_queue_t *queue)
 {
     kupl_taskbase_t *tb = nullptr;
     if (kupl_unlikely(queue == nullptr)) {
