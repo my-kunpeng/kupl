@@ -16,6 +16,7 @@
 #include "dm/memcpy/kupl_memcpy.h"
 #include "memory/mpool/kupl_mpool.h"
 #include "memory/hbw/kupl_hbw.h"
+#include "memory/mem/kupl_mem.h"
 #include "executor/kupl_executor.h"
 #include "mt/scheduler/kupl_sched.h"
 #include "mt/kupl_graph.h"
@@ -71,14 +72,21 @@ static kupl_always_inline int kupl_memory_module_init()
         goto err_mpool_init;
     }
 
+    if (kupl_unlikely(kupl_mem_init() != KUPL_OK)) {
+        goto err_mem_init;
+    }
+
     return KUPL_OK;
 
+err_mem_init:
+    kupl_mpool_fini();
 err_mpool_init:
     return KUPL_ERROR;
 }
 
 static kupl_always_inline void kupl_memory_module_fini()
 {
+    kupl_mem_fini();
     kupl_mpool_fini();
 }
 

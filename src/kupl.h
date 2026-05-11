@@ -656,6 +656,62 @@ kupl_export kupl_hbw_policy_t kupl_hbw_get_policy(void);
  */
 kupl_export int kupl_hbw_set_policy(kupl_hbw_policy_t policy);
 
+typedef enum kupl_mem_copyin_flag {
+    KUPL_MEM_CREATE,
+    KUPL_MEM_IN,
+    KUPL_MEM_PUSH,
+} kupl_mem_copyin_flag_t;
+
+/**
+ * @brief Copy the ddr memory to hbw.
+ *
+ * @param [in] ddr_addr     the ddr address of memory
+ * @param [in] size         the amount of ddr memory
+ * @param [in] flag         copyin operation flag @ref kupl_mem_copyin_flag_t
+ * @param [in] queue        queue to submit async item
+ *
+ * @return  KUPL_OK for success
+ */
+kupl_export int kupl_mem_copyin(void *ddr_addr, size_t size, kupl_mem_copyin_flag_t flag, kupl_queue_h queue);
+
+typedef enum kupl_mem_copyout_flag {
+    KUPL_MEM_DELETE,
+    KUPL_MEM_OUT,
+    KUPL_MEM_PULL,
+    KUPL_MEM_DELETE_FINALIZE,
+    KUPL_MEM_OUT_FINALIZE,
+} kupl_mem_copyout_flag_t;
+
+/**
+ * @brief Copy the hbw memory to ddr.
+ *
+ * @param [in] ddr_addr     the ddr address of memory
+ * @param [in] size         the amount of hbw memory
+ * @param [in] flag         copyout operation flag @ref kupl_mem_copyout_flag_t
+ * @param [in] queue        queue to submit async item
+ *
+ * @return  KUPL_OK for success
+ */
+kupl_export int kupl_mem_copyout(void *ddr_addr, size_t size, kupl_mem_copyout_flag_t flag, kupl_queue_h queue);
+
+/**
+ * @brief Query the hbw address correspond to ddr.
+ *
+ * @param [in] ddr_addr     the ddr address of memory
+ *
+ * @return  the hbw address of memory
+ */
+kupl_export void *kupl_mem_query(void *ddr_addr);
+
+/**
+ * @brief Test whether a variable is accessible form the hbw.
+ *
+ * @param [in] ddr_addr     the ddr address of memory
+ *
+ * @return  the accessiblity of the variable on hbw
+ */
+kupl_export bool kupl_mem_is_present(void *ddr_addr);
+
 /**
  * @brief pin the page table of the buffer
  *

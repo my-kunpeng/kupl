@@ -2,6 +2,7 @@
 .git
 .idea
 .codemate
+AGENTS.md
 build
 lcov
 example
