@@ -416,7 +416,7 @@ int kupl_memcpy(void *dst, const void *src, size_t count)
         memcpy(dst, src, count);
     } else {
         kupl_memcpy_task_package_t package{.dst = dst, .src = src, .count = count};
-        int threads = kupl_get_kernel_concurrency();
+        int threads = kupl_get_kernel_concurrency_inner();
         kupl_invoke_parallel(kupl_memcpy_pf_task, (&package), threads);
     }
     return KUPL_OK;
@@ -700,7 +700,7 @@ int kupl_memcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size
     } else {
         kupl_memcpy2d_task_package_t package{
             .dst = dst, .dpitch = dpitch, .src = src, .spitch = spitch, .width = width, .height = height};
-        int threads = kupl_get_kernel_concurrency();
+        int threads = kupl_get_kernel_concurrency_inner();
         kupl_invoke_parallel(kupl_memcpy2d_pf_task, (&package), threads);
     }
     return KUPL_OK;

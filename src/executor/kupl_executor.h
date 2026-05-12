@@ -91,6 +91,7 @@ int kupl_executor_start(void);
 void kupl_executor_stop(void);
 void kupl_executor_enable(int executor_id);
 void kupl_executor_disable(int executor_id);
+int kupl_get_kernel_concurrency_inner(void);
 void kupl_executor_set_pf_ult(kupl_ult_h ult, int geid);
 kupl_ult_h kupl_executor_get_pf_ult();
 

@@ -12,6 +12,7 @@
 #include "gtest/gtest.h"
 #include "kupl.h"
 #include "utils/type/kupl_status.h"
+#include "executor/kupl_executor.h"
 #include "memory/mpool/kupl_mpool.h"
 #include "dm/memcpy/kupl_memcpy.h"
 
@@ -19,7 +20,7 @@ TEST(test_memory_inner, kupl_kernel_concurrency)
 {
     int num_executors = kupl_get_num_executors();
     kupl_set_kernel_concurrency(num_executors);
-    ASSERT_EQ(kupl_get_kernel_concurrency(), num_executors);
+    ASSERT_EQ(kupl_get_kernel_concurrency_inner(), num_executors);
 }
 
 TEST(test_memory_inner, kupl_kernel_concurrency_local)

@@ -367,7 +367,7 @@ void kupl_set_kernel_concurrency(int num)
     g_kernel_concurrency = num;
 }
 
-int kupl_get_kernel_concurrency(void)
+int kupl_get_kernel_concurrency_inner(void)
 {
     if (!g_core_inited && kupl_init() == KUPL_ERROR) {
         return KUPL_ERROR;

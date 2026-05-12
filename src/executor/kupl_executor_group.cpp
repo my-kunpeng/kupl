@@ -18,6 +18,7 @@
 #include "utils/arch/kupl_atomic.h"
 #include "mt/barrier/kupl_barrier.h"
 #include "utils/sys/kupl_compiler.h"
+#include "utils/sys/kupl_math.h"
 
 kupl_egroup_h kupl_egroup_create(int *executors, int executors_num)
 {
@@ -216,6 +217,9 @@ kupl_egroup_h kupl_get_current_egroup()
 
 void kupl_egroup_barrier(kupl_egroup_h egroup)
 {
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return;
+    }
     if (egroup == nullptr) {
         egroup = kupl_get_current_egroup();
     }
@@ -228,6 +232,11 @@ void kupl_egroup_barrier(kupl_egroup_h egroup)
     }
     auto local_tid = kupl_egroup_get_local_id(egroup);
     auto local_tnum = egroup->cur.size;
+    if (kupl_in_parallel()) {
+        local_tnum = kupl_min(local_tnum, (uint32_t)kupl_get_kernel_concurrency());
+    } else if (kupl_backend_type_get() == KUPL_BACKEND_PTHREAD) {
+        return;
+    }
     if (local_tid < local_tnum) {
         kupl_barrier_wait(egroup->barrier, static_cast<int>(local_tid), static_cast<int>(local_tnum));
     }
@@ -235,6 +244,9 @@ void kupl_egroup_barrier(kupl_egroup_h egroup)
 
 void kupl_egroup_fork_barrier(kupl_egroup_h egroup)
 {
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return;
+    }
     if (egroup == nullptr) {
         egroup = kupl_get_current_egroup();
     }
@@ -254,6 +266,9 @@ void kupl_egroup_fork_barrier(kupl_egroup_h egroup)
 
 void kupl_egroup_join_barrier(kupl_egroup_h egroup)
 {
+    if (!g_core_inited && kupl_init() == KUPL_ERROR) {
+        return;
+    }
     if (egroup == nullptr) {
         egroup = kupl_get_current_egroup();
     }
