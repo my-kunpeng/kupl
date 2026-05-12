@@ -52,7 +52,7 @@ if [[ "${BUILD_KIND}" == "test" ]]; then
     KUPL_EXECUTOR_COUNT=1024 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml
     KUPL_EXECUTOR_COUNT=1024 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 --membind=16 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=*kupl_malloc*
   else
-    KUPL_EXECUTOR_COUNT=1024 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=-*hbw*
+    KUPL_EXECUTOR_COUNT=1024 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=-*hbw*:*kupl_mem_*
   fi
 
   KUPL_SCHED_MQ_PLACEQ_AFFINITY="0|0,1|0-1023|6-5|1025-1026|*" KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=mq numactl -N 0 $INSTALL_PATH/bin/test_pthread_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_pthread_detail.xml --gtest_filter=*queue_event*
@@ -68,7 +68,7 @@ if [[ "${BUILD_KIND}" == "test" ]]; then
     KUPL_EXECUTOR_BACKEND=omp KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_omp_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_detail.xml
     KUPL_EXECUTOR_BACKEND=omp KUPL_SCHED_POLICY=static_mq numactl -N 0 --membind=16 $INSTALL_PATH/bin/test_omp_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_detail.xml --gtest_filter=*kupl_malloc*
   else
-    KUPL_EXECUTOR_BACKEND=omp KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_omp_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_detail.xml --gtest_filter=-*hbw*
+    KUPL_EXECUTOR_BACKEND=omp KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/test_omp_main --gtest_output=xml:$PROJ_PATH/lcov/report/test_detail.xml --gtest_filter=-*hbw*:*kupl_mem_*
   fi
 
   if ! [ -f "$INSTALL_PATH/bin/test_shm_main" ]; then
