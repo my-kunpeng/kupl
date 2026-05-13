@@ -285,7 +285,6 @@ static void copyin_task(void *args)
         }
         default:
             mem_args->ret = KUPL_ERROR;
-            kupl_error("copyin_task invalid flag.");
             return;
     }
 }
@@ -388,7 +387,6 @@ static void copyout_task(void *args)
             break;
         default:
             mem_args->ret = KUPL_ERROR;
-            kupl_error("copyout_task invalid flag.");
             return;
     }
     // dealloc
