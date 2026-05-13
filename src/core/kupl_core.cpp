@@ -220,6 +220,7 @@ __attribute__((destructor)) void kupl_fini()
         kupl_mpool_fini();
     }
     kupl_dm_module_fini();
+    kupl_memory_module_fini();
     kupl_sdma_module_fini();
     if (g_tools_inited) {
         kupl_tools_fini();

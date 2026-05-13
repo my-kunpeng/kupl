@@ -38,6 +38,7 @@ fuzz_cmd_t g_cmdtable[] = {
 
 fuzz_cmd_t g_pthread_table[] = {
     {"reduce", reduce_pthread},
+    {"mem", mem_pthread},
     {"memcpy1d_async", memcpy1d_async_example},
 };
 

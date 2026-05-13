@@ -63,6 +63,7 @@ extern void queue_priority_example(int test_count);
 extern void hbw_example(int test_count);
 extern void mma_base_example(int test_count);
 extern void copy_base_example(int test_count);
+extern void mem_pthread(int test_count);
 
 typedef struct fuzz_cmd {
     const char *cmd;

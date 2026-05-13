@@ -249,6 +249,7 @@ elif [[ "${BUILD_KIND}" == "fuzz" ]]; then
                                                               '*/dm/memcpy/kupl_memcpy.cpp' \
                                                               '*/memory/mpool/*.cpp' \
                                                               '*/memory/hbw/*.cpp' \
+                                                              '*/memory/mem/*.cpp' \
                                                               '*/mt/scheduler/kupl_sched.cpp' \
                                                               '*/mt/scheduler/plugin/static_mq/*.cpp' \
                                                               '*/mt/kupl_check.cpp' \
