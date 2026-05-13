@@ -15,6 +15,10 @@
 
 #ifdef __cplusplus
 
+#include <cstddef>
+#include <tuple>
+#include <type_traits>
+
 /** @brief exposed kupl symbol table */
 #define kupl_export __attribute__((visibility("default")))
 
@@ -62,36 +66,215 @@ public:
 template <int V>
 class Int : public Val<int, V> {};
 
+class Underscore : public Int<-1> {};
+
 template <int V>
 class Ops : public Val<int, V> {};
 
 template <typename... Args>
-class Shape {};
+class kupl_tuple {
+public:
+    using tuple_type = std::tuple<Args...>;
+
+    kupl_tuple(Args&... args) : data_(args...) {}
+
+    template<typename... AA>
+    kupl_tuple(AA&&... args) : data_(std::forward<AA>(args)...) {}
+
+    static constexpr size_t size_v()
+    {
+        return size_;
+    }
+
+    template<size_t Index>
+    constexpr auto& get()
+    {
+        static_assert(Index < size_, "Index out of buonds");
+        return std::template get<Index>(data_);
+    }
+
+    template<size_t Index>
+    constexpr const auto& get() const
+    {
+        static_assert(Index < size_, "Index out of buonds");
+        return std::template get<Index>(data_);
+    }
+
+private:
+    std::tuple<Args...> data_;
+    static constexpr size_t size_ = sizeof...(Args);
+};
 
 template <typename... Args>
-class Stride {};
+class Coord : public kupl_tuple<Args...> {
+public:
+    Coord(Args... args) : kupl_tuple<Args...>(args...) {}
+};
+
+template <typename... Args>
+class Shape : public kupl_tuple<Args...> {
+public:
+    Shape(Args... args) : kupl_tuple<Args...>(args...) {}
+};
+
+template <typename... Args>
+class Stride : public kupl_tuple<Args...> {
+public:
+    Stride(Args... args) : kupl_tuple<Args...>(args...) {}
+};
+
+template <typename T, typename Tuple>
+struct tuple_contains : std::false_type {};
+
+template <typename T, typename... Args>
+struct tuple_contains<T, kupl_tuple<Args...>>
+    : std::disjunction<std::is_same<T, Args>...> {};
+
+template <typename T, typename... Args>
+struct tuple_contains<T, Coord<Args...>>
+    : std::disjunction<std::is_same<T, Args>...> {};
+
+template <typename T, typename Tuple>
+constexpr bool has_elem = tuple_contains<T, Tuple>::value;
+
+template <typename Tuple>
+constexpr bool has_underscore = has_elem<Underscore, Tuple>;
+
+template<typename Coord, typename Shape, typename Stride>
+constexpr auto crd2idx(Coord coord, Shape shape, Stride stride);
+
+template<typename Coord, typename Layout>
+constexpr auto slice_and_offset(Coord coord, Layout layout);
 
 template <typename Shape, typename Stride>
-class Layout {};
+class Layout {
+public:
+    Layout(Shape shape, Stride stride) : shape_(shape), stride_(stride) {}
+
+    Shape shape()
+    {
+        return shape_;
+    }
+
+    Stride stride()
+    {
+        return stride_;
+    }
+
+    template <class Coord>
+    auto operator()(Coord const &coord) {
+        static_assert(!has_underscore<Coord>, "layout() not support slice now");
+        return crd2idx(coord, shape_, stride_);
+    }
+
+private:
+    Shape shape_;
+    Stride stride_;
+};
 
 template <typename dtype, typename Layout>
 class Tensor {
 public:
-    Tensor(dtype *ptr_, Layout layout_) : ptr(ptr_), layout(layout_) {}
+    Tensor(dtype *ptr, Layout layout) : ptr_(ptr), layout_(layout) {}
     ~Tensor()
     {
-        ptr = nullptr;
+        ptr_ = nullptr;
     }
 
-    inline dtype *getPtr() const
+    inline dtype *get_ptr() const
     {
-        return ptr;
+        return ptr_;
+    }
+
+    template <class Coord>
+    decltype(auto) operator()(Coord const &coord) {
+        if constexpr (has_underscore<Coord>) {
+            auto [sliced_layout, offset] = slice_and_offset(coord, layout_);
+            return Tensor<dtype, decltype(sliced_layout)>{ptr_ + offset, sliced_layout};
+        } else {
+            return ptr_[layout_(coord)];
+        }
     }
 
 private:
-    dtype *ptr;
-    Layout layout;
+    dtype *ptr_;
+    Layout layout_;
 };
+
+template <typename... Args>
+Shape<Args...> make_shape(Args&&... args);
+
+template<size_t I = 0, typename Coord, typename Shape, typename... Collected>
+constexpr auto slice_shape_impl(const Coord &coord, const Shape &shape, Collected&&... collected)
+{
+    constexpr size_t size = Coord::size_v();
+    if constexpr (I >= size) {
+        return make_shape(std::forward<Collected>(collected)...);
+    } else {
+        if constexpr (std::is_same_v<std::decay_t<decltype(coord.template get<I>())>, Underscore>) {
+            return slice_shape_impl<I + 1>(coord, shape, std::forward<Collected>(collected)..., shape.template get<I>());
+        } else {
+            return slice_shape_impl<I + 1>(coord, shape, std::forward<Collected>(collected)...);
+        }
+    }
+}
+
+template<typename Coord, typename Shape>
+constexpr auto slice_shape(Coord coord, Shape shape)
+{
+    static_assert(Coord::size_v() == Shape::size_v(), "slice must have the same size");
+    return slice_shape_impl(coord, shape);
+}
+
+template <typename... Args>
+Stride<Args...> make_stride(Args&&... args);
+
+template<size_t I = 0, typename Coord, typename Stride, typename... Collected>
+constexpr auto slice_stride_impl(const Coord &coord, const Stride &stride, Collected&&... collected)
+{
+    constexpr size_t size = Coord::size_v();
+    static_assert(size == 2, "slice stride size == 2");
+    if constexpr (I >= size) {
+        return make_stride(std::forward<Collected>(collected)...);
+    } else {
+        if constexpr (std::is_same_v<std::decay_t<decltype(coord.template get<I>())>, Underscore>) {
+            return slice_stride_impl<I + 1>(coord, stride, std::forward<Collected>(collected)..., stride.template get<I>());
+        } else {
+            return slice_stride_impl<I + 1>(coord, stride, std::forward<Collected>(collected)...);
+        }
+    }
+}
+
+template<typename Coord, typename Stride>
+constexpr auto slice_stride(Coord coord, Stride stride)
+{
+    static_assert(Coord::size_v() == Stride::size_v(), "slice must have the same size");
+    return slice_stride_impl(coord, stride);
+}
+
+template<typename Coord, typename Shape, typename Stride, size_t... I>
+constexpr auto crd2idx_impl(const Coord &coord, const Shape &shape, const Stride &stride, std::index_sequence<I...>)
+{
+    static_assert(((std::remove_reference_t<decltype(coord.template get<I>())>::val < std::remove_reference_t<decltype(shape.template get<I>())>::val) && ...), "Coord must less than Shape with the same index");
+    return (((std::is_same_v<std::decay_t<decltype(coord.template get<I>())>, Underscore> ? 0 : std::remove_reference_t<decltype(coord.template get<I>())>::val) * std::remove_reference_t<decltype(stride.template get<I>())>::val) + ...);
+}
+
+template<typename Coord, typename Shape, typename Stride>
+constexpr auto crd2idx(Coord coord, Shape shape, Stride stride)
+{
+    static_assert(coord.size_v() == shape.size_v(), "Coord & Shape must have the same size");
+    static_assert(coord.size_v() == stride.size_v(), "Coord & Stride must have the same size");
+    return crd2idx_impl(coord, shape, stride, std::make_index_sequence<coord.size_v()>{});
+}
+
+template<typename Coord, typename Layout>
+constexpr auto slice_and_offset(Coord coord, Layout layout)
+{
+    auto sliced_shape = slice_shape(coord, layout.shape());
+    auto sliced_stride = slice_stride(coord, layout.stride());
+    auto sliced_idx = crd2idx(coord, layout.shape(), layout.stride());
+    return std::make_pair(make_layout(sliced_shape, sliced_stride), sliced_idx);
+}
 
 typedef enum mma_atom {
     MMA_32x16x1_F64F64F64 = 0,
@@ -168,21 +351,27 @@ private:
 };
 
 template <typename... Args>
-kupl_export Shape<Args...> make_shape([[maybe_unused]] Args... args)
+kupl_export Coord<Args...> make_coord(Args&&... args)
 {
-    return Shape<Args...>{};
+    return Coord<Args...>{std::forward<Args>(args)...};
 }
 
 template <typename... Args>
-kupl_export Stride<Args...> make_stride([[maybe_unused]] Args... args)
+kupl_export Shape<Args...> make_shape(Args&&... args)
 {
-    return Stride<Args...>{};
+    return Shape<Args...>{std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+kupl_export Stride<Args...> make_stride(Args&&... args)
+{
+    return Stride<Args...>{std::forward<Args>(args)...};
 }
 
 template <typename Shape, typename Stride>
-kupl_export Layout<Shape, Stride> make_layout([[maybe_unused]] Shape shape, [[maybe_unused]] Stride stride)
+kupl_export Layout<Shape, Stride> make_layout(Shape shape, Stride stride)
 {
-    return Layout<Shape, Stride>{};
+    return Layout<Shape, Stride>{shape, stride};
 }
 
 template <typename dtype, typename Layout>
@@ -293,7 +482,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_32 * AtomShapeM, N_16 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), AtomShapeK * K_512);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), AtomShapeK * K_512);
     }
 };
 
@@ -313,7 +502,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_32 * AtomShapeM, N_16 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), AtomShapeK);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), AtomShapeK);
     }
 };
 
@@ -333,7 +522,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), K_2 * AtomShapeK);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), K_2 * AtomShapeK);
     }
 };
 
@@ -353,7 +542,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), AtomShapeK);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), AtomShapeK);
     }
 };
 
@@ -373,7 +562,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), K_4 * AtomShapeK);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), K_4 * AtomShapeK);
     }
 };
 
@@ -393,7 +582,7 @@ private:
               const Tensor<dtypeC, Layout<ShapeC, StrideC>> &C) MMA_INOUT
     {
         TiledCallFunc::call_mma<M_32 * AtomShapeM, N_32 * AtomShapeN, StrideA, StrideB, StrideC, dtypeA, dtypeB,
-                                dtypeC>(A.getPtr(), B.getPtr(), C.getPtr(), K_4 * AtomShapeK);
+                                dtypeC>(A.get_ptr(), B.get_ptr(), C.get_ptr(), K_4 * AtomShapeK);
     }
 };
 
@@ -407,7 +596,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &tensor) MMA_IN
     {
-        TiledCallFunc::call_store<M_32 * AtomShapeM, N_16 * AtomShapeN, StrideD, dtypeD>(tensor.getPtr());
+        TiledCallFunc::call_store<M_32 * AtomShapeM, N_16 * AtomShapeN, StrideD, dtypeD>(tensor.get_ptr());
     }
 };
 
@@ -421,7 +610,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &tensor) MMA_IN
     {
-        TiledCallFunc::call_store<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideD, dtypeD>(tensor.getPtr());
+        TiledCallFunc::call_store<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideD, dtypeD>(tensor.get_ptr());
     }
 };
 
@@ -435,7 +624,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &tensor) MMA_IN
     {
-        TiledCallFunc::call_store<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideD, dtypeD>(tensor.getPtr());
+        TiledCallFunc::call_store<M_16 * AtomShapeM, N_64 * AtomShapeN, StrideD, dtypeD>(tensor.get_ptr());
     }
 };
 
@@ -449,7 +638,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &tensor) MMA_IN
     {
-        TiledCallFunc::call_store<M_32 * AtomShapeM, N_32 * AtomShapeN, StrideD, dtypeD>(tensor.getPtr());
+        TiledCallFunc::call_store<M_32 * AtomShapeM, N_32 * AtomShapeN, StrideD, dtypeD>(tensor.get_ptr());
     }
 };
 
@@ -463,7 +652,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_32x1_F64_RM2CM>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                            M_32 * AtomShapeM, N_1 * AtomShapeN);
     }
 };
@@ -478,7 +667,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_1x16_F64_CM2RM>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(), M_1 * AtomShapeM,
+        TiledCallFunc::call_copy<Ops<COPY_1x16_F64_CM2RM>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(), M_1 * AtomShapeM,
                                                                            N_16 * AtomShapeN);
     }
 };
@@ -493,7 +682,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_16x2_BF16_RM2ZZ>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_16x2_BF16_RM2ZZ>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_16 * AtomShapeM, N_2 * AtomShapeN);
     }
 };
@@ -508,7 +697,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_2x64_BF16_CM2NN>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_2x64_BF16_CM2NN>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_2 * AtomShapeM, N_64 * AtomShapeN);
     }
 };
@@ -523,7 +712,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_16x1_BF16_RM2CM>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_16x1_BF16_RM2CM>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_16 * AtomShapeM, N_1 * AtomShapeN);
     }
 };
@@ -538,7 +727,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_1x64_BF16_CM2RM>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_1x64_BF16_CM2RM>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_1 * AtomShapeM, N_64 * AtomShapeN);
     }
 };
@@ -553,7 +742,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_16x4_INT8_RM2ZZ>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_16x4_INT8_RM2ZZ>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_16 * AtomShapeM, N_4 * AtomShapeN);
     }
 };
@@ -568,7 +757,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_4x64_INT8_CM2NN>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_4x64_INT8_CM2NN>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_4 * AtomShapeM, N_64 * AtomShapeN);
     }
 };
@@ -583,7 +772,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_32x4_INT8_RM2ZZ>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_32x4_INT8_RM2ZZ>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_32 * AtomShapeM, N_4 * AtomShapeN);
     }
 };
@@ -598,7 +787,7 @@ private:
     template <typename dtypeD, typename ShapeD, typename StrideD, typename dtypeS, typename ShapeS, typename StrideS>
     void call(Tensor<dtypeD, Layout<ShapeD, StrideD>> &dst, const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src) MMA_IN
     {
-        TiledCallFunc::call_copy<Ops<COPY_4x32_INT8_CM2NN>, dtypeD, dtypeS>(dst.getPtr(), src.getPtr(),
+        TiledCallFunc::call_copy<Ops<COPY_4x32_INT8_CM2NN>, dtypeD, dtypeS>(dst.get_ptr(), src.get_ptr(),
                                                                             M_4 * AtomShapeM, N_32 * AtomShapeN);
     }
 };
@@ -618,7 +807,7 @@ private:
     template <typename dtypeS, typename ShapeS, typename StrideS>
     void call(const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src)
     {
-        kupl_prefetch_L1(src.getPtr());
+        kupl_prefetch_L1(src.get_ptr());
     }
 };
 
@@ -637,7 +826,7 @@ private:
     template <typename dtypeS, typename ShapeS, typename StrideS>
     void call(const Tensor<dtypeS, Layout<ShapeS, StrideS>> &src)
     {
-        kupl_prefetch_L2(src.getPtr());
+        kupl_prefetch_L2(src.get_ptr());
     }
 };
 } // namespace tensor
