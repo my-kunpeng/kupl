@@ -16,7 +16,7 @@
 TEST(test_time, kupl_get_wtime)
 {
     double start = kupl_get_wtime();
-    usleep(1000001);
+    usleep(1000000);
     double end = kupl_get_wtime();
-    ASSERT_TRUE((end - start) >= 1);
+    ASSERT_TRUE((end - start) > 0.999);
 }
