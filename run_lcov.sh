@@ -117,7 +117,7 @@ elif [[ "${BUILD_KIND}" == "fuzz" ]]; then
     exit 0
   fi
   OMP_PROC_BIND=close KUPL_LOG_LEVEL=4 KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/fuzz_omp_main all 30000
-  KUPL_EXECUTOR_COUNT=1024 KUPL_EXECUTOR_BACKEND=pthread KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/fuzz_omp_main memcpy1d_async 30000
+  KUPL_EXECUTOR_BACKEND=pthread KUPL_LOG_LEVEL=4 KUPL_SCHED_POLICY=static_mq numactl -N 0 $INSTALL_PATH/bin/fuzz_omp_main all 30000
   if ! [ -f "$INSTALL_PATH/bin/fuzz_shm_main" ]; then
     echo "$INSTALL_PATH/bin/fuzz_shm_main not exist."
     exit 0

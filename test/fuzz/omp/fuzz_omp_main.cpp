@@ -12,18 +12,19 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <string>
 #include "common/fuzz_common.h"
 
 fuzz_cmd_t g_cmdtable[] = {
     {"egroup", egroup_example},
     {"parallel_for", parallel_for_static_example},
     {"parallel_for_dynamic", parallel_for_dynamic_example},
+    {"reduce", reduce_omp},
     {"task_wait", task_wait_example},
     {"taskloop", taskloop_example},
     {"graph_base", graph_base_example},
     {"mlock", mlock_example},
     {"memcpy1d", memcpy1d_example},
-    {"memcpy1d_async", memcpy1d_async_example},
     {"memcpy2d", memcpy2d_example},
     {"memcpy2d_async", memcpy2d_async_example},
     {"memcpy_priority", memcpy_priority_example},
@@ -35,6 +36,11 @@ fuzz_cmd_t g_cmdtable[] = {
     {"hbw", hbw_example},
 };
 
+fuzz_cmd_t g_pthread_table[] = {
+    {"reduce", reduce_pthread},
+    {"memcpy1d_async", memcpy1d_async_example},
+};
+
 int main(int argc, const char *argv[])
 {
     if (argc < MIN_ARGUMENT_NUM) {
@@ -44,19 +50,38 @@ int main(int argc, const char *argv[])
 
     printf("case = %s, count = %s\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
 
+    const char* backend = getenv("KUPL_EXECUTOR_BACKEND");
+    std::string backend_str = backend ? std::string(backend) : std::string("omp");
+    if (backend_str == "pthread") {
+        if (strcmp(argv[CASE_INDEX], "all") == 0) {
+            for (size_t i = 0; i < sizeof(g_pthread_table) / sizeof(g_pthread_table[0]); i++) {
+                g_pthread_table[i].func(atoi(argv[COUNT_INDEX]));
+                printf("case = %s, count = %s ... finished\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
+            }
+        } else {
+            for (size_t i = 0; i < sizeof(g_pthread_table) / sizeof(g_pthread_table[0]); i++) {
+                if (strcmp(argv[CASE_INDEX], g_pthread_table[i].cmd) == 0) {
+                    g_pthread_table[i].func(atoi(argv[COUNT_INDEX]));
+                    printf("case = %s, count = %s ... finished\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
+                    break;
+                }
+            }
+        }
+        return 0;
+    }
+
     if (strcmp(argv[CASE_INDEX], "all") == 0) {
         for (size_t i = 0; i < sizeof(g_cmdtable) / sizeof(g_cmdtable[0]); i++) {
             g_cmdtable[i].func(atoi(argv[COUNT_INDEX]));
             printf("case = %s, count = %s ... finished\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
         }
-        return 0;
-    }
-
-    for (size_t i = 0; i < sizeof(g_cmdtable) / sizeof(g_cmdtable[0]); i++) {
-        if (strcmp(argv[CASE_INDEX], g_cmdtable[i].cmd) == 0) {
-            g_cmdtable[i].func(atoi(argv[COUNT_INDEX]));
-            printf("case = %s, count = %s ... finished\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
-            break;
+    } else {
+        for (size_t i = 0; i < sizeof(g_cmdtable) / sizeof(g_cmdtable[0]); i++) {
+            if (strcmp(argv[CASE_INDEX], g_cmdtable[i].cmd) == 0) {
+                g_cmdtable[i].func(atoi(argv[COUNT_INDEX]));
+                printf("case = %s, count = %s ... finished\n", argv[CASE_INDEX], argv[COUNT_INDEX]);
+                break;
+            }
         }
     }
     return 0;
