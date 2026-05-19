@@ -149,7 +149,7 @@ void *kupl_mem_query(void *ddr)
         return nullptr;
     }
     if (kupl_unlikely(ddr == nullptr)) {
-        kupl_error("kupl_mem_query invalid params ddr: %p", ddr);
+        kupl_warn("kupl_mem_query invalid params ddr: %p", ddr);
         return nullptr;
     }
     ptrdiff_t offset = 0;
@@ -226,11 +226,10 @@ static int mem_attach(kupl_mem_args_t *args)
             kupl_error("mem_attach map failed.");
             return KUPL_ERROR;
         }
-    } else if (mem->att_cnt == 0 &&
-               ((mem->base_ddr != args->ddr) || (mem->base_ddr == args->ddr && args->size != mem->size))) {
+    } else if (mem->att_cnt == 0) {
         // fix ddr address reuse
         // 1. force wait
-        kupl_queue_wait(args->queue);
+        kupl_queue_wait_all();
         // 2. mem map
         mem = mem_map(args->ddr, args->size);
         if (kupl_unlikely(mem == nullptr)) {
