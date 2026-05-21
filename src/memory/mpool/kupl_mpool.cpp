@@ -1399,26 +1399,41 @@ int kupl_mlock(void *buffer, size_t count)
         return KUPL_ERROR;
     }
 
+    int ret;
+    int res = KUPL_ERROR;
     g_pin_map_lock->lock(g_pin_map_lock);
     auto iter = g_pin_map->find(buffer);
     if (iter == g_pin_map->end()) {
         kupl_memory_info_t *mem_info = (kupl_memory_info_t *)malloc(sizeof(kupl_memory_info_t));
-        if (mem_info == nullptr) {
-            g_pin_map_lock->unlock(g_pin_map_lock);
-            return KUPL_ERROR;
+        if (kupl_unlikely(mem_info == nullptr)) {
+            goto out;
         }
         mem_info->size = count;
         mem_info->sdma_fd = fd;
+        ret = kupl_sdma_pin_umem(fd, buffer, (uint32_t)count, &mem_info->cookie);
+        if (kupl_unlikely(ret != 0)) {
+            free(mem_info);
+            goto out;
+        }
         g_pin_map->insert(std::make_pair(buffer, mem_info));
-        kupl_sdma_pin_umem(fd, buffer, (uint32_t)count, &mem_info->cookie);
     } else if (iter->second->size < count) {
-        kupl_sdma_unpin_umem(iter->second->sdma_fd, iter->second->cookie);
+        ret = kupl_sdma_unpin_umem(iter->second->sdma_fd, iter->second->cookie);
+        if (kupl_unlikely(ret != 0)) {
+            goto out;
+        }
         iter->second->sdma_fd = fd;
         iter->second->size = count;
-        kupl_sdma_pin_umem(fd, buffer, (uint32_t)count, &iter->second->cookie);
+        ret = kupl_sdma_pin_umem(fd, buffer, (uint32_t)count, &iter->second->cookie);
+        if (kupl_unlikely(ret != 0)) {
+            free(iter->second);
+            g_pin_map->erase(iter);
+            goto out;
+        }
     }
+    res = KUPL_OK;
+out:
     g_pin_map_lock->unlock(g_pin_map_lock);
-    return KUPL_OK;
+    return res;
 }
 
 int kupl_munlock(void *buffer, size_t count)
@@ -1431,11 +1446,15 @@ int kupl_munlock(void *buffer, size_t count)
     g_pin_map_lock->lock(g_pin_map_lock);
     auto iter = g_pin_map->find(buffer);
     if (iter != g_pin_map->end() && iter->second->size == count) {
-        kupl_sdma_unpin_umem(iter->second->sdma_fd, iter->second->cookie);
+        int ret = kupl_sdma_unpin_umem(iter->second->sdma_fd, iter->second->cookie);
+        if (kupl_unlikely(ret != 0)) {
+            goto out;
+        }
         free(iter->second); // free kupl_memory_info_t
         g_pin_map->erase(iter);
         res = KUPL_OK;
     }
+out:
     g_pin_map_lock->unlock(g_pin_map_lock);
     return res;
 }

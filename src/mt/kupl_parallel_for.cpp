@@ -494,6 +494,7 @@ static kupl_always_inline int kupl_task_policy_impl(kupl_pf_t &pf, SetupFunc set
     }
 
     final();
+    pf.post_func = nullptr;
     return KUPL_OK;
 }
 
@@ -621,6 +622,7 @@ static int kupl_omp_parallel(kupl_pf_t &pf)
 
     if (pf.post_func) {
         pf.post_func(pf, 0, pf.num_threads);
+        pf.post_func = nullptr;
     }
     return KUPL_OK;
 }
@@ -679,7 +681,7 @@ static kupl_always_inline int kupl_parallel_for_num_threads(kupl_parallel_for_de
     int num_threads = desc->concurrency;
     auto range = desc->range;
     if (range != nullptr) { // include no range condition
-        int total_chunks = 1;
+        int64_t total_chunks = 1;
         for (int i = 0; i < range->dim; i++) {
             int64_t lower = range->nd_range[i].lower;
             int64_t upper = range->nd_range[i].upper;
@@ -687,12 +689,12 @@ static kupl_always_inline int kupl_parallel_for_num_threads(kupl_parallel_for_de
             int64_t blocksize = range->nd_range[i].blocksize;
             // there has been checked outside overflow and int64_t to int
             if (lower < upper) {
-                total_chunks *= (int)kupl_divup(upper - lower, blocksize * step);
+                total_chunks *= (int64_t)kupl_divup(upper - lower, blocksize * step);
             } else {
-                total_chunks *= (int)kupl_divup(lower - upper, -blocksize * step);
+                total_chunks *= (int64_t)kupl_divup(lower - upper, -blocksize * step);
             }
         }
-        num_threads = kupl_min(num_threads, total_chunks);
+        num_threads = (int)kupl_min((int64_t)num_threads, total_chunks);
     }
     num_threads = kupl_min(num_threads, (int)kupl_egroup_get_cur_size(egroup));
     num_threads = kupl_min(num_threads, kupl_get_kernel_concurrency_inner());
@@ -857,15 +859,15 @@ int kupl_parallel_for_reduce(kupl_parallel_for_desc_t *desc, kupl_pf_reduce_func
 
     kupl_reduce_policy_prepare(pf);
 
+    // omp backend and not in parallel
+    if (kupl_unlikely(kupl_backend_type_get() == KUPL_BACKEND_OMP && omp_in_parallel() == 0)) {
+        return kupl_omp_parallel(pf);
+    }
+
     // task policy has its own execution path
     if (pf.policy == KUPL_LOOP_POLICY_TASK && pf.range != nullptr) {
         pf.master_eid = master_eid;
         return kupl_reduce_task_policy_func(pf);
-    }
-
-    // omp backend and not in parallel
-    if (kupl_unlikely(kupl_backend_type_get() == KUPL_BACKEND_OMP && omp_in_parallel() == 0)) {
-        return kupl_omp_parallel(pf);
     }
 
     KUPL_FOR_EACH_LIMIT_EGROUP(pf.egroup, pf.num_threads, eid, eidx, { g_pf[eid].master_eid = master_eid; });
