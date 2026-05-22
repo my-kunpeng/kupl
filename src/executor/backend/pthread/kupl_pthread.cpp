@@ -70,6 +70,7 @@ static int executor_backend_init(void *args)
     pthread_attr_init(&thread_attr);
     pthread_attr_setstacksize(&thread_attr, KUPL_PTHREAD_EXE_DEFAULD_STACK_SIZE);
     int ret = pthread_create(&exec->thread_id, &thread_attr, executor_body, exec);
+    pthread_attr_destroy(&thread_attr);
     if (ret != 0) {
         return KUPL_ERROR;
     }

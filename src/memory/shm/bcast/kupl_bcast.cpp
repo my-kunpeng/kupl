@@ -346,13 +346,19 @@ int do_bcast_linear_scatter_allgather(void *buffer, int data_size, int root, kup
     int offset;
     void *notify_others_flags;
 
-    kupl_shm_win_query(notify_others_win, root, &notify_others_flags);
+    int ret = kupl_shm_win_query(notify_others_win, root, &notify_others_flags);
+    if (ret == KUPL_ERROR) {
+        return KUPL_ERROR;
+    }
     notify_others((int *)notify_others_flags, rank, root);
 
     // linear scatter
     if (rank != root) {
         void *root_ptr;
-        kupl_shm_win_query(win, root, &root_ptr);
+        ret = kupl_shm_win_query(win, root, &root_ptr);
+        if (ret == KUPL_ERROR) {
+            return KUPL_ERROR;
+        }
         root_ptr = (char *)root_ptr + win->offset;
         int block_size = div;
         if (rank < rem) {
@@ -367,7 +373,10 @@ int do_bcast_linear_scatter_allgather(void *buffer, int data_size, int root, kup
     for (int i = 0; i < numprocs; i++) {
         if (rank != i) {
             void *remote_buf;
-            kupl_shm_win_query(win, i, &remote_buf);
+            ret = kupl_shm_win_query(win, i, &remote_buf);
+            if (ret == KUPL_ERROR) {
+                return KUPL_ERROR;
+            }
             remote_buf = (char *)remote_buf + win->offset;
             int remote_block_size = div;
             if (i < rem) {

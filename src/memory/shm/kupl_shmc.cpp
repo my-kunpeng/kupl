@@ -342,7 +342,7 @@ static kupl_always_inline int kupl_alltoall_request_check(kupl_shm_request_h req
     if (!kupl_check_type_size(type_size)) {
         return kupl_log_error_return(ERROR, "type_size is invalid");
     }
-    if (count < 0 || count > INT_MAX / (comm_size * type_size)) {
+    if (count <= 0 || count > INT_MAX / (comm_size * type_size)) {
         return kupl_log_error_return(ERROR, "invalid count");
     }
     if (UINT_MAX / (unsigned int)count < (unsigned int)type_size) {

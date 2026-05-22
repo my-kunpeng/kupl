@@ -282,12 +282,14 @@ err_mummap_other:
 err_free_mmap_filename_array:
     kupl_safe_free(kupl_shm_posix_get_info((win_temp)->info, myid)->mmap_filename_array);
 err_mummap_unlink:
-    item = kupl_shm_posix_get_info((win_temp)->info, myid);
-    if (munmap(item->super.attach_address, item->mmap_size) == -1) {
-        kupl_error("munmap failed, errno = %s", strerror(errno));
-    }
-    if (shm_unlink(item->mmap_filename) == -1) {
-        kupl_error("shm_unlink failed, errno = %s", strerror(errno));
+    if ((!shm_info.is_contig || (win_temp->rank == 0)) && size) {
+        item = kupl_shm_posix_get_info((win_temp)->info, myid);
+        if (munmap(item->super.attach_address, item->mmap_size) == -1) {
+            kupl_error("munmap failed, errno = %s", strerror(errno));
+        }
+        if (shm_unlink(item->mmap_filename) == -1) {
+            kupl_error("shm_unlink failed, errno = %s", strerror(errno));
+        }
     }
 err_free_info:
     kupl_safe_free((win_temp)->info);

@@ -48,7 +48,11 @@ kupl_lock_t *kupl_pthread_spinlock_init()
 
     auto raw = (pthread_spinlock_t *)(lock + 1);
 
-    pthread_spin_init(raw, 0);
+    int ret = pthread_spin_init(raw, 0);
+    if (ret != 0) {
+        kupl_free_inner(lock);
+        return nullptr;
+    }
     lock->type = PTHREAD_SPINLOCK;
     lock->vol_raw_lock = raw;
     lock->lock = kupl_pthread_spinlock_lock;

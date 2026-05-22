@@ -127,30 +127,30 @@ static kupl_shm_xpmem_remote_region_t kupl_shm_xpmem_get_remote_region(kupl_shm_
 
 static int kupl_shm_xpmem_delete_remote_regions(kupl_shm_xpmem_remote_regions_t &remote_regions)
 {
-    int ret;
+    int ret = KUPL_OK;
 
     for (auto iter = remote_regions.begin(); iter != remote_regions.end(); iter++) {
-        ret = kupl_shm_xpmem_detach(iter->attach_pg_aligned_addr);
-        if (ret == -1) {
-            return kupl_log_error_return(ERROR, "kupl_shm_xpmem_detach failed");
+        if (kupl_shm_xpmem_detach(iter->attach_pg_aligned_addr) == -1) {
+            kupl_error("xpmem_delete_remote_regions fail");
+            ret = KUPL_ERROR;
         }
     }
 
-    return KUPL_OK;
+    return ret;
 }
 
 static int kupl_shm_xpmem_delete_remote_keys(kupl_shm_xpmem_remote_keys_t &remote_keys)
 {
-    int ret;
+    int ret = KUPL_OK;
 
     for (auto iter = remote_keys.begin(); iter != remote_keys.end(); iter++) {
-        ret = kupl_shm_xpmem_release(iter->second);
-        if (ret == -1) {
-            return kupl_log_error_return(ERROR, "kupl_shm_xpmem_release failed");
+        if (kupl_shm_xpmem_release(iter->second) == -1) {
+            kupl_error("xpmem_delete_remote_keys fail");
+            ret = KUPL_ERROR;
         }
     }
 
-    return KUPL_OK;
+    return ret;
 }
 
 static int kupl_shm_xpmem_get_trans_mem(kupl_shm_xpmem_packed_params_t params,
@@ -196,7 +196,7 @@ static int kupl_shm_xpmem_allgather_addr(size_t size, void *baseptr, kupl_shm_wi
     kupl_shm_xpmem_packed_params_t *packed_params_list = nullptr;
     kupl_shm_oob_allgather_cb_t oob_allgather;
     kupl_shm_xpmem_remote_trans_mem_t remote_trans_mem;
-    int ret;
+    int ret = KUPL_OK;
 
     packed_params_list =
         (kupl_shm_xpmem_packed_params_t *)kupl_malloc_inner(sizeof(kupl_shm_xpmem_packed_params_t) * numprocs);
@@ -245,20 +245,10 @@ int kupl_shm_xpmem_init()
 
 int kupl_shm_xpmem_finalize()
 {
-    int ret;
-
     for (auto iter = g_remote_caches.begin(); iter != g_remote_caches.end(); iter++) {
-        ret = kupl_shm_xpmem_delete_remote_regions(iter->second);
-        if (ret == KUPL_ERROR) {
-            return ret;
-        }
+        kupl_shm_xpmem_delete_remote_regions(iter->second);
     }
-
-    ret = kupl_shm_xpmem_delete_remote_keys(g_remote_keys);
-    if (ret == KUPL_ERROR) {
-        return ret;
-    }
-
+    kupl_shm_xpmem_delete_remote_keys(g_remote_keys);
     return kupl_shm_xpmem_remove_global_xsegid();
 }
 

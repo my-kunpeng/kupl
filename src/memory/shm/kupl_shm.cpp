@@ -38,6 +38,9 @@ typedef void (*kupl_shm_dereg_ops_func_t)();
 static kupl_shm_type_t g_shm_type = KUPL_SHM_INIT;
 static const kupl_shm_ops_t *g_kupl_shm_ops[KUPL_SHM_LAST] = {nullptr, nullptr, nullptr};
 static kupl_dl_module_t *g_kupl_shm_xpmem_module = nullptr;
+static constexpr int xpmem_ops_num = 2;
+static kupl_shm_reg_ops_func_t kupl_shm_xpmem_reg_ops = nullptr;
+static kupl_shm_dereg_ops_func_t kupl_shm_xpmem_dereg_ops = nullptr;
 
 kupl_shm_info shm_info = {.is_contig = 0};
 
@@ -53,25 +56,24 @@ static void kupl_shm_unload_module_posix()
 
 static void kupl_shm_load_module_xpmem()
 {
-    int ret;
-    std::string lib_xpmem_path;
-    kupl_dl_module_sym_t reg_ops;
-    kupl_shm_reg_ops_func_t kupl_shm_xpmem_reg_ops;
-
-    lib_xpmem_path = std::string(kupl_dl_get_default_path()) + LIBKUPL_SHM_XPMEM_SO;
-    ret = access(lib_xpmem_path.c_str(), F_OK);
-    if (ret) {
+    if (g_kupl_shm_xpmem_module) {
         return;
     }
 
-    reg_ops.sym = nullptr;
-    reg_ops.sym_name = "kupl_shm_xpmem_reg_ops";
-
-    if (g_kupl_shm_xpmem_module == nullptr) {
-        g_kupl_shm_xpmem_module = kupl_dl_open(lib_xpmem_path.c_str(), &reg_ops, 1);
+    kupl_dl_module_sym_t reg_ops[xpmem_ops_num];
+    std::string lib_xpmem_path = std::string(kupl_dl_get_default_path()) + LIBKUPL_SHM_XPMEM_SO;
+    if (access(lib_xpmem_path.c_str(), F_OK) != 0) {
+        return;
     }
+
+    reg_ops[0].sym = nullptr;
+    reg_ops[0].sym_name = "kupl_shm_xpmem_reg_ops";
+    reg_ops[1].sym = nullptr;
+    reg_ops[1].sym_name = "kupl_shm_xpmem_dereg_ops";
+    g_kupl_shm_xpmem_module = kupl_dl_open(lib_xpmem_path.c_str(), reg_ops, xpmem_ops_num);
     if (g_kupl_shm_xpmem_module) {
-        kupl_shm_xpmem_reg_ops = (kupl_shm_reg_ops_func_t)reg_ops.sym;
+        kupl_shm_xpmem_reg_ops = (kupl_shm_reg_ops_func_t)reg_ops[0].sym;
+        kupl_shm_xpmem_dereg_ops = (kupl_shm_dereg_ops_func_t)reg_ops[1].sym;
         if (kupl_shm_xpmem_reg_ops) {
             kupl_shm_xpmem_reg_ops();
         }
@@ -80,25 +82,14 @@ static void kupl_shm_load_module_xpmem()
 
 static void kupl_shm_unload_module_xpmem()
 {
-    std::string lib_xpmem_path;
-    kupl_dl_module_sym_t dereg_ops;
-    kupl_shm_dereg_ops_func_t kupl_shm_xpmem_dereg_ops;
-
     if (g_kupl_shm_xpmem_module) {
-        lib_xpmem_path = std::string(kupl_dl_get_default_path()) + LIBKUPL_SHM_XPMEM_SO;
-
-        dereg_ops.sym = nullptr;
-        dereg_ops.sym_name = "kupl_shm_xpmem_dereg_ops";
-
-        g_kupl_shm_xpmem_module = kupl_dl_open(lib_xpmem_path.c_str(), &dereg_ops, 1);
-        if (g_kupl_shm_xpmem_module) {
-            kupl_shm_xpmem_dereg_ops = (kupl_shm_dereg_ops_func_t)dereg_ops.sym;
-            if (kupl_shm_xpmem_dereg_ops) {
-                kupl_shm_xpmem_dereg_ops();
-            }
-            kupl_dl_close(g_kupl_shm_xpmem_module);
-            g_kupl_shm_xpmem_module = nullptr;
+        if (kupl_shm_xpmem_dereg_ops) {
+            kupl_shm_xpmem_dereg_ops();
         }
+        kupl_dl_close(g_kupl_shm_xpmem_module);
+        kupl_shm_xpmem_reg_ops = nullptr;
+        kupl_shm_xpmem_dereg_ops = nullptr;
+        g_kupl_shm_xpmem_module = nullptr;
     }
 }
 
@@ -200,6 +191,20 @@ int kupl_shm_finalize()
     return ret;
 }
 
+void kupl_shm_fence_destroy(kupl_shm_win_h win)
+{
+    kupl_fence_destroy(win->comm_fence);
+    kupl_fence_destroy(win->peer_fence);
+    win->comm_fence = nullptr;
+    win->peer_fence = nullptr;
+    if (win->fence_win_ptr != nullptr) {
+        kupl_shm_win_free_inner(*(kupl_shm_win_h *)win->fence_win_ptr, 0);
+        kupl_safe_free(win->fence_win_ptr);
+        win->fence_win_ptr = nullptr;
+    }
+    return;
+}
+
 int kupl_shm_fence_create(kupl_shm_win_h win)
 {
     int ret;
@@ -219,10 +224,14 @@ int kupl_shm_fence_create(kupl_shm_win_h win)
      */
     size_t size = KUPL_CACHE_LINE * KUPL_SHM_FENCE_FLAG_WIN_SIZE * ((size_t)peer_flag_num + (size_t)comm_flag_num);
     win->fence_win_ptr = (void *)kupl_malloc_inner(sizeof(kupl_shm_win_h));
+    if (win->fence_win_ptr == nullptr) {
+        return KUPL_ERROR;
+    }
 
     ret = kupl_shm_win_alloc_inner(size, win->comm, &baseptr, (kupl_shm_win_h *)win->fence_win_ptr, 0);
     if (ret != KUPL_OK) {
-        kupl_shm_win_free_inner(*(kupl_shm_win_h *)win->fence_win_ptr, 0);
+        kupl_free_inner(win->fence_win_ptr);
+        win->fence_win_ptr = nullptr;
         return KUPL_ERROR;
     }
     // initialization
@@ -234,22 +243,12 @@ int kupl_shm_fence_create(kupl_shm_win_h win)
     win->peer_fence = kupl_fence_create(KUPL_FENCE_ALGO_P2P, win);
     win->comm_fence = kupl_fence_create(KUPL_FENCE_ALGO_DEFAULT, win);
     if (kupl_unlikely(win->peer_fence == nullptr || win->comm_fence == nullptr)) {
-        kupl_shm_win_free_inner(*(kupl_shm_win_h *)win->fence_win_ptr, 0);
-        kupl_free_inner(win->fence_win_ptr);
+        kupl_shm_fence_destroy(win);
         return KUPL_ERROR;
     }
     win->peer_fence->win = *(kupl_shm_win_h *)win->fence_win_ptr;
     win->comm_fence->win = *(kupl_shm_win_h *)win->fence_win_ptr;
     return ret;
-}
-
-void kupl_shm_fence_destroy(kupl_shm_win_h win)
-{
-    kupl_fence_destroy(win->comm_fence);
-    kupl_fence_destroy(win->peer_fence);
-    kupl_shm_win_free_inner(*(kupl_shm_win_h *)win->fence_win_ptr, 0);
-    kupl_safe_free(win->fence_win_ptr);
-    return;
 }
 
 int kupl_shm_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win)

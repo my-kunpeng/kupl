@@ -150,7 +150,7 @@ static kupl_always_inline int kupl_shm_sls_win_del(kupl_shm_win_h win, int flag)
 int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, kupl_shm_win_h *win, int flag,
                            size_t *offset_list)
 {
-    int ret;
+    size_t mlock_size = size;
     long err;
     kupl_shm_win_h win_temp;
 
@@ -165,7 +165,6 @@ int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, ku
     win_temp->info = (kupl_shm_base_info_t *)kupl_malloc_inner(sizeof(kupl_shm_base_info_t) * (size_t)comm->size);
     if (win_temp->info == nullptr) {
         kupl_error("kupl_shm_sls_win_alloc malloc info failed");
-        ret = KUPL_ERROR;
         goto err_free_win;
     }
 
@@ -173,13 +172,13 @@ int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, ku
 
     if (g_kupl_shm_sls_use_hugepage) {
         win_temp->base_ptr = kupl_malloc_hugepages_inner(size, &win_temp->align_size, g_kupl_shm_sls_use_hbw);
+        mlock_size = win_temp->align_size;
     } else {
         /* alloc buffer on HBW */
         if (g_kupl_shm_sls_use_hbw) {
             err = kupl_shm_sls_bind_to_hbw();
             if (err == -1) {
                 kupl_error("set_mempolicy bind to hbw node failed");
-                ret = KUPL_ERROR;
                 goto err_free_info;
             }
         }
@@ -189,28 +188,21 @@ int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, ku
             err = kupl_shm_sls_unbind_to_hbw();
             if (err == -1) {
                 kupl_error("set_mempolicy unbind to hbw node failed");
-                ret = KUPL_ERROR;
                 goto err_free_base_ptr;
             }
         }
     }
     if (win_temp->base_ptr == nullptr) {
         kupl_error("kupl_shm_sls_win_alloc failed with malloc size %zu", size);
-        ret = KUPL_ERROR;
         goto err_free_info;
     }
 
     memset(win_temp->base_ptr, 0, size);
     /* pin base_ptr */
-    if (g_kupl_shm_sls_use_hugepage) {
-        kupl_mlock(win_temp->base_ptr, win_temp->align_size);
-    } else {
-        kupl_mlock(win_temp->base_ptr, size);
-    }
+    kupl_mlock(win_temp->base_ptr, mlock_size);
 
     if (kupl_shm_sls_allgather_addr(size, win_temp->base_ptr, win_temp, offset_list)) {
-        ret = KUPL_ERROR;
-        goto err_free_base_ptr;
+        goto err_allgather_addr;
     }
 
     kupl_shm_sls_win_add(comm, win_temp, flag);
@@ -219,13 +211,19 @@ int kupl_shm_sls_win_alloc(size_t size, kupl_shm_comm_h comm, void **baseptr, ku
 
     return KUPL_OK;
 
+err_allgather_addr:
+    kupl_munlock(win_temp->base_ptr, mlock_size);
 err_free_base_ptr:
-    kupl_safe_free(win_temp->base_ptr);
+    if (g_kupl_shm_sls_use_hugepage) {
+        kupl_free_hugepages_inner(win_temp->base_ptr, win_temp->align_size);
+    } else {
+        kupl_safe_free(win_temp->base_ptr);
+    }
 err_free_info:
     kupl_safe_free(win_temp->info);
 err_free_win:
     kupl_safe_free(win_temp);
-    return ret;
+    return KUPL_ERROR;
 }
 
 int kupl_shm_sls_win_free(kupl_shm_win_h win, int flag)
