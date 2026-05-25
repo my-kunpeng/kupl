@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include "kupl.h"
 #include "utils/debug/kupl_log.h"
 #include "utils/sys/kupl_compiler.h"
@@ -155,11 +156,13 @@ void *kupl_shm_attach(kupl_shm_addr_t addr, size_t size)
 
     void *dst_addr = aligned_alloc(SLS_ALIGN_SIZE, aligned_size); // aligned_size = 2097152
     if (dst_addr == nullptr) {
+        close(res.init.fd);
         return nullptr;
     }
 
     ret = kupl_shm_sls_zcopy(res.init.fd, (void *)aligned_addr, dst_addr, src_pid, dst_pid, aligned_size, res);
     if (ret == KUPL_ERROR) {
+        close(res.init.fd);
         free(dst_addr);
         return nullptr;
     }

@@ -212,6 +212,10 @@ static kupl_always_inline kupl_reduce_args_t *kupl_reduce_args_dup_impl(kupl_red
         own_pf.rd_data = (kupl_reduce_data_t *)kupl_memory_alloc((size_t)rd_num * sizeof(kupl_reduce_data_t), geid);
         own_pf.rd_num_max = rd_num;
         if (kupl_unlikely((own_pf.rd_item == nullptr) || (own_pf.rd_data == nullptr))) {
+            kupl_memory_free(own_pf.rd_item, geid);
+            kupl_memory_free(own_pf.rd_data, geid);
+            own_pf.rd_item = nullptr;
+            own_pf.rd_data = nullptr;
             return nullptr;
         }
     }
