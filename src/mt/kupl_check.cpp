@@ -59,6 +59,16 @@ int kupl_check_range(kupl_nd_range_t *range, kupl_loop_policy_type_t policy)
                     return kupl_log_error_return(ERROR, "the range input is not support! blocksize: %ld", blocksize);
                 }
         }
+        if (kupl_unlikely(step > 0 &&
+            ((upper >= 0 && lower < 0 && upper > INT64_MAX + lower)
+            || upper - lower - 1 > INT64_MAX - step * range->nd_range[i].blocksize))) {
+            return kupl_log_error_return(ERROR, "the range input is not support!");
+        }
+        if (kupl_unlikely(step < 0 &&
+            ((lower >= 0 && upper < 0 && lower > INT64_MAX + upper)
+            || lower - upper > INT64_MAX - (-step * range->nd_range[i].blocksize - 1)))) {
+            return kupl_log_error_return(ERROR, "the range input is not support!");
+        }
         remain_chunks /= kupl_divup(upper - lower, chunksize);
     }
     if (kupl_unlikely(remain_chunks == 0)) {
