@@ -21,6 +21,7 @@
 
 /** @brief exposed kupl symbol table */
 #define kupl_export __attribute__((visibility("default")))
+#define kupl_likely(_x) __builtin_expect(!!(_x), 1)
 
 #if defined(__clang__)
 
@@ -67,6 +68,15 @@ template <int V>
 class Int : public Val<int, V> {};
 
 class Underscore : public Int<-1> {};
+
+template<typename T>
+class is_int_constexpr : public std::false_type {};
+
+template<int V>
+class is_int_constexpr<Int<V>> : public std::true_type {};
+
+template<>
+class is_int_constexpr<Underscore> : public std::true_type {};
 
 template <int V>
 class Ops : public Val<int, V> {};
@@ -172,6 +182,12 @@ private:
     Stride stride_;
 };
 
+template<typename dtype, typename Layout>
+class TensorAdd;
+
+template<typename dtype, typename Layout>
+class TensorScalMul;
+
 template <typename dtype, typename Layout>
 class Tensor {
 public:
@@ -196,10 +212,84 @@ public:
         }
     }
 
+    template<typename D, typename L>
+    friend TensorAdd<D, L> operator+(const Tensor<D, L>& lhs, const Tensor<D, L>& rhs);
+    template<typename D, typename L>
+    friend TensorScalMul<D, L> operator*(const Tensor<D, L>& lhs, const D& rhs);
+    template<typename D, typename L>
+    friend TensorScalMul<D, L> operator*(const D& lhs, const Tensor<D, L>& rhs);
+
+    Tensor<dtype, Layout>& operator=(const TensorAdd<dtype, Layout>& add) {
+        auto lhs = add.lhs_;
+        auto rhs = add.rhs_;
+        if (kupl_likely(layout_.shape().size_v() == 2)) {
+            const int m = std::remove_reference_t<decltype(layout_.shape().template get<0>())>::val;
+            const int n = std::remove_reference_t<decltype(layout_.shape().template get<1>())>::val;
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    int idx = layout_(Coord<int, int>(i, j));
+                    ptr_[idx] = lhs.get_ptr()[idx] + rhs.get_ptr()[idx];
+                }
+            }
+        }
+        return *this;
+    }
+
+    Tensor<dtype, Layout>& operator=(const TensorScalMul<dtype, Layout>& scalmul) {
+        auto lhs = scalmul.lhs_;
+        auto rhs = scalmul.rhs_;
+        if (kupl_likely(layout_.shape().size_v() == 2)) {
+            const int m = std::remove_reference_t<decltype(layout_.shape().template get<0>())>::val;
+            const int n = std::remove_reference_t<decltype(layout_.shape().template get<1>())>::val;
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    int idx = layout_(Coord<int, int>(i, j));
+                    ptr_[idx] = lhs.get_ptr()[idx] * rhs;
+                }
+            }
+        }
+        return *this;
+    }
+
 private:
     dtype *ptr_;
     Layout layout_;
 };
+
+template<typename dtype, typename Layout>
+class TensorAdd {
+public:
+    Tensor<dtype, Layout> lhs_, rhs_;
+
+    TensorAdd(Tensor<dtype, Layout> lhs, Tensor<dtype, Layout> rhs) : lhs_(lhs), rhs_(rhs) {}
+};
+
+template<typename dtype, typename Layout>
+class TensorScalMul {
+public:
+    Tensor<dtype, Layout> lhs_;
+    dtype rhs_;
+
+    TensorScalMul(Tensor<dtype, Layout> lhs, dtype rhs) : lhs_(lhs), rhs_(rhs) {}
+};
+
+template<typename dtype, typename Layout>
+TensorAdd<dtype, Layout> operator+(const Tensor<dtype, Layout>& lhs, const Tensor<dtype, Layout>& rhs)
+{
+    return TensorAdd<dtype, Layout>{lhs, rhs};
+}
+
+template<typename dtype, typename Layout>
+TensorScalMul<dtype, Layout> operator*(const Tensor<dtype, Layout>& lhs, const dtype& rhs)
+{
+    return TensorScalMul<dtype, Layout>{lhs, rhs};
+}
+
+template<typename dtype, typename Layout>
+TensorScalMul<dtype, Layout> operator*(const dtype& lhs, const Tensor<dtype, Layout>& rhs)
+{
+    return TensorScalMul<dtype, Layout>{rhs, lhs};
+}
 
 template <typename... Args>
 Shape<Args...> make_shape(Args&&... args);
@@ -255,8 +345,23 @@ constexpr auto slice_stride(Coord coord, Stride stride)
 template<typename Coord, typename Shape, typename Stride, size_t... I>
 constexpr auto crd2idx_impl(const Coord &coord, const Shape &shape, const Stride &stride, std::index_sequence<I...>)
 {
-    static_assert(((std::remove_reference_t<decltype(coord.template get<I>())>::val < std::remove_reference_t<decltype(shape.template get<I>())>::val) && ...), "Coord must less than Shape with the same index");
-    return (((std::is_same_v<std::decay_t<decltype(coord.template get<I>())>, Underscore> ? 0 : std::remove_reference_t<decltype(coord.template get<I>())>::val) * std::remove_reference_t<decltype(stride.template get<I>())>::val) + ...);
+    int result = 0;
+
+    auto process_dim = [&](auto index_constant) {
+        constexpr size_t Index = decltype(index_constant)::value;
+        if constexpr (is_int_constexpr<std::decay_t<decltype(coord.template get<Index>())>>::value) {
+            static_assert(((std::remove_reference_t<decltype(coord.template get<Index>())>::val < std::remove_reference_t<decltype(shape.template get<Index>())>::val)), "Coord must less than Shape with the same index");
+            result += (std::is_same_v<std::decay_t<decltype(coord.template get<Index>())>, Underscore> ? 0 : std::remove_reference_t<decltype(coord.template get<Index>())>::val) * std::remove_reference_t<decltype(stride.template get<Index>())>::val;
+        } else {
+            if (kupl_likely(coord.template get<Index>() < std::remove_reference_t<decltype(shape.template get<Index>())>::val)) {
+                result += coord.template get<Index>() * std::remove_reference_t<decltype(stride.template get<Index>())>::val;
+            }
+        }
+    };
+
+    (process_dim(std::integral_constant<size_t, I>{}), ...);
+
+    return result;
 }
 
 template<typename Coord, typename Shape, typename Stride>

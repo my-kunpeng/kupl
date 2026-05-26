@@ -46,4 +46,116 @@ TEST(test_tensor, tensor_index)
     free(data);
 }
 
+TEST(test_tensor, tensor_operator_add)
+{
+    const int M = 3;
+    const int N = 8;
+    double *data_a = (double*)malloc(sizeof(double) * M * N);
+    double *data_b = (double*)malloc(sizeof(double) * M * N);
+    double *data_c = (double*)malloc(sizeof(double) * M * N);
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            data_a[i * N + j] = i * N + j;
+            data_b[i * N + j] = M * N - i * N - j;
+            data_c[i * N + j] = 0;
+        }
+    }
+
+    auto shape = make_shape(Int<3>{}, Int<8>{});
+    auto stride = make_stride(Int<8>{}, Int<1>{});
+    auto layout = make_layout(shape, stride);
+    auto tensor_a = make_tensor(data_a, layout);
+    auto tensor_b = make_tensor(data_b, layout);
+    auto tensor_c = make_tensor(data_c, layout);
+
+    tensor_c = tensor_a + tensor_b;
+
+    bool ret = true;
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            auto coord = make_coord(i, j);
+            if (tensor_c(coord) != M * N) {
+                ret = false;
+            }
+        }
+    }
+    ASSERT_TRUE(ret = true);
+
+    free(data_c);
+    free(data_b);
+    free(data_a);
+}
+
+TEST(test_tensor, tensor_operator_leftscalmul)
+{
+    const int M = 3;
+    const int N = 8;
+    double *data_a = (double*)malloc(sizeof(double) * M * N);
+    double *data_b = (double*)malloc(sizeof(double) * M * N);
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            data_a[i * N + j] = i * N + j;
+            data_b[i * N + j] = 0;
+        }
+    }
+
+    auto shape = make_shape(Int<3>{}, Int<8>{});
+    auto stride = make_stride(Int<8>{}, Int<1>{});
+    auto layout = make_layout(shape, stride);
+    auto tensor_a = make_tensor(data_a, layout);
+    auto tensor_b = make_tensor(data_b, layout);
+
+    tensor_b = tensor_a * 2.0;
+
+    bool ret = true;
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            auto coord = make_coord(i, j);
+            if (tensor_b(coord) != 2.0 * (i * N + j)) {
+                ret = false;
+            }
+        }
+    }
+    ASSERT_TRUE(ret = true);
+
+    free(data_b);
+    free(data_a);
+}
+
+TEST(test_tensor, tensor_operator_rightscalmul)
+{
+    const int M = 3;
+    const int N = 8;
+    double *data_a = (double*)malloc(sizeof(double) * M * N);
+    double *data_b = (double*)malloc(sizeof(double) * M * N);
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            data_a[i * N + j] = i * N + j;
+            data_b[i * N + j] = 0;
+        }
+    }
+
+    auto shape = make_shape(Int<3>{}, Int<8>{});
+    auto stride = make_stride(Int<8>{}, Int<1>{});
+    auto layout = make_layout(shape, stride);
+    auto tensor_a = make_tensor(data_a, layout);
+    auto tensor_b = make_tensor(data_b, layout);
+
+    tensor_b = 2.0 * tensor_a;
+
+    bool ret = true;
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            auto coord = make_coord(i, j);
+            if (tensor_b(coord) != 2.0 * (i * N + j)) {
+                ret = false;
+            }
+        }
+    }
+    ASSERT_TRUE(ret = true);
+
+    free(data_b);
+    free(data_a);
+}
+
 #endif
